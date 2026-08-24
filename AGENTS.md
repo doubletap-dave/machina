@@ -31,15 +31,15 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | 0 — Frozen contracts | ✅ Done | `WAVE0` → `ec35279` | 13/13 (`pnpm test`) |
 | 1a Compiler | 🔄 In progress | `lane/1a-compiler` @ `machina-1a` | — |
 | 1b Kernel | ✅ Done (unmerged) | `lane/1b-kernel` @ `f17ef9d` · `machina-1b` | 11/11 (`@machina/simulation`) |
-| 1c Agents | 🔄 In progress | `lane/1c-agents` @ `machina-1c` | — |
-| 1d Persistence | ⏳ Pending | `lane/1d-persistence` | — |
-| 1e Studio | ⏳ Pending | `lane/1e-studio` | — |
-| 1f Runtime | ⏳ Pending | `lane/1f-runtime` | — |
+| 1c Agents | ✅ Done (unmerged) | `lane/1c-agents` @ `a9d703d` · `machina-1c` | 4/4 (`@machina/agents`) |
+| 1d Persistence | ⏳ Pending | `lane/1d-persistence` @ `machina-1d` | — |
+| 1e Studio | 🔄 In progress | `lane/1e-studio` @ `machina-1e` | — |
+| 1f Runtime | ✅ Done (unmerged) | `lane/1f-runtime` @ `8698742` · `machina-1f` | 6/6 (`@machina/runtime`) |
 | 2a Presets + LLM compose | ⏳ Blocked on Wave 1 merge | — | — |
 | 2b RUN instrumentation | ⏳ Blocked on Wave 1 merge | — | — |
 | 3 Dead Channel Lite | ⏳ Blocked on Wave 2 | — | — |
 
-Reports: `docs/reports/wave0.md` · `docs/reports/lane-1b.md` · other lanes → `docs/reports/lane-*.md`
+Reports: `docs/reports/wave0.md` · `lane-1b.md` · `lane-1c.md` · `lane-1f.md` · others → `docs/reports/lane-*.md`
 
 ---
 
@@ -93,10 +93,10 @@ plugins/core/src/
 
 packages/graph/           # Lane 1a — stub until implemented
 packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.ts (types internal)
-packages/agents/          # Lane 1c
+packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d
 apps/studio/              # Lane 1e
-apps/runtime/             # Lane 1f
+apps/runtime/             # Lane 1f ✅ — app.ts ws.ts cli.ts (bin: machina)
 examples/dead-channel-lite/ # Wave 3
 docs/reports/             # Implementation reports (required)
 ```
@@ -117,6 +117,10 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/simulation` (Lane 1b, unmerged):** `createRng`, `createKernel`, `createKernelFromPlan`, `actorIdsFromPlan`, `Kernel`, `ThinkFn` — **`TrueWorldState` is internal only** (`types.ts`, not on index)
 
+**`@machina/agents` (Lane 1c, unmerged):** `createAgentRuntime`, `compileAgentGraph`, `createAgentCheckpointer`, `PgliteCheckpointer`, `AgentRuntime`, `ThinkResult`, `Usage`
+
+**`@machina/runtime` (Lane 1f, unmerged):** `createApp`, `runCli`, WebSocket on `/ws`, CLI `machina run <dir> --turns N` · `machina test`
+
 ---
 
 ## Commands
@@ -132,7 +136,9 @@ pnpm --filter @machina/agents test
 pnpm --filter @machina/persistence test
 pnpm --filter @machina/studio test
 pnpm --filter @machina/studio dev      # after Lane 1e
-pnpm --filter @machina/runtime dev     # after Lane 1f
+pnpm --filter @machina/runtime test
+pnpm exec machina test                 # after Lane 1f merge (from apps/runtime)
+pnpm exec machina run ./examples/dead-channel-lite --turns 20
 
 # Add a dependency to a package (example)
 cd packages/graph
