@@ -1,30 +1,27 @@
 # Wave 3 — Dead Channel Lite
 
 **Status:** COMPLETE  
-**Branch:** `master`
+**Branch:** `master` @ `993fef8`
 
 ## Commits
 
-| Message |
-|---------|
-| feat: add Dead Channel Lite example project |
-| test: prove Dead Channel Lite 20-turn headless run |
+| SHA | Message |
+|-----|---------|
+| `993fef8` | feat: add Dead Channel Lite example and 20-turn headless proof |
 
 ## Test summary
 
-```
-pnpm --filter @machina/runtime test
-→ dead-channel-lite.test.ts: 2 passed (load+compile, 20-turn proof)
-```
-
-Full suite: 66/66 (`pnpm test`)
+| Package | Tests |
+|---------|-------|
+| `@machina/runtime` | 10/10 (includes 3 dead-channel-lite tests) |
+| **Full suite** | **67/67** (`pnpm test`) |
 
 ## Deliverables
 
-- `examples/dead-channel-lite/` — `machina.json`, `graphs/*.json`, `build-project.ts` (source for regeneration)
-- `apps/runtime/tests/dead-channel-lite.test.ts` — headless 20-turn proof, no truth leakage
+- `examples/dead-channel-lite/` — `machina.json`, `graphs/*.json` (Atlantic Federation + Vesper Union)
+- `apps/runtime/tests/dead-channel-lite.test.ts` — compile, 20-turn truth-isolation proof, hack grep
 
 ## Verification
 
-- Zero `dead-channel` string hacks in `packages/` or `apps/studio`
-- `pnpm exec machina run ./examples/dead-channel-lite --turns 20` (CLI)
+- Zero `dead-channel` scenario hacks in `packages/` or `apps/studio`
+- `pnpm exec machina run ./examples/dead-channel-lite --turns 20`
