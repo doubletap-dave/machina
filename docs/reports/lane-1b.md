@@ -14,7 +14,7 @@
 |----------|---------|
 | `af7be56` | feat: add seeded simulation RNG |
 | `cc2f4d5` | feat: add seeded turn kernel with interventions and rewind |
-| (latest) | feat: construct kernel from SimulationPlan actor refs |
+| `17505d8` | feat: construct kernel from SimulationPlan actor refs |
 
 ## Test summary
 
