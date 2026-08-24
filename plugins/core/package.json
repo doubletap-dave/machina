@@ -2,10 +2,18 @@
   "name": "@machina/plugin-core",
   "version": "0.0.0",
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "test": "vitest run" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
   "dependencies": {
     "@machina/node-sdk": "workspace:*",
     "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@machina/core": "workspace:*",
+    "@machina/graph": "workspace:*"
   }
 }
