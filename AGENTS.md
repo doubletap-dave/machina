@@ -29,17 +29,17 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | Wave | Status | Tag / branch | Tests |
 |------|--------|--------------|-------|
 | 0 — Frozen contracts | ✅ Done | `WAVE0` → `ec35279` | 13/13 (`pnpm test`) |
-| 1a Compiler | 🔄 In progress | `lane/1a-compiler` @ `machina-1a` | — |
+| 1a Compiler | ✅ Done (unmerged) | `lane/1a-compiler` @ `fea8260` · `machina-1a` | 6/6 (`@machina/graph`) |
 | 1b Kernel | ✅ Done (unmerged) | `lane/1b-kernel` @ `f17ef9d` · `machina-1b` | 11/11 (`@machina/simulation`) |
 | 1c Agents | ✅ Done (unmerged) | `lane/1c-agents` @ `a9d703d` · `machina-1c` | 4/4 (`@machina/agents`) |
-| 1d Persistence | ⏳ Pending | `lane/1d-persistence` @ `machina-1d` | — |
+| 1d Persistence | ✅ Done (unmerged) | `lane/1d-persistence` @ `d91ed6b` · `machina-1d` | 4/4 (`@machina/persistence`) |
 | 1e Studio | ✅ Done (unmerged) | `lane/1e-studio` @ `99f975c` · `machina-1e` | 5/5 (`@machina/studio`) |
 | 1f Runtime | ✅ Done (unmerged) | `lane/1f-runtime` @ `8698742` · `machina-1f` | 6/6 (`@machina/runtime`) |
 | 2a Presets + LLM compose | ⏳ Blocked on Wave 1 merge | — | — |
 | 2b RUN instrumentation | ⏳ Blocked on Wave 1 merge | — | — |
 | 3 Dead Channel Lite | ⏳ Blocked on Wave 2 | — | — |
 
-Reports: `docs/reports/wave0.md` · `lane-1b.md` · `lane-1c.md` · `lane-1e.md` · `lane-1f.md` · others → `docs/reports/lane-*.md`
+Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md`
 
 ---
 
@@ -91,10 +91,10 @@ plugins/core/src/
     control.ts entities.ts cognition.ts perception.ts systems.ts analysis.ts
     schemas.ts index.ts
 
-packages/graph/           # Lane 1a — stub until implemented
+packages/graph/           # Lane 1a ✅ — compile.ts flatten.ts validate.ts classify.ts
 packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.ts (types internal)
 packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
-packages/persistence/     # Lane 1d
+packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell, XYFlow canvas
 apps/runtime/             # Lane 1f ✅ — app.ts ws.ts cli.ts (bin: machina)
 examples/dead-channel-lite/ # Wave 3
@@ -115,9 +115,13 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`
 
+**`@machina/graph` (Lane 1a, unmerged):** `compile`
+
 **`@machina/simulation` (Lane 1b, unmerged):** `createRng`, `createKernel`, `createKernelFromPlan`, `actorIdsFromPlan`, `Kernel`, `ThinkFn` — **`TrueWorldState` is internal only** (`types.ts`, not on index)
 
 **`@machina/agents` (Lane 1c, unmerged):** `createAgentRuntime`, `compileAgentGraph`, `createAgentCheckpointer`, `PgliteCheckpointer`, `AgentRuntime`, `ThinkResult`, `Usage`
+
+**`@machina/persistence` (Lane 1d, unmerged):** `saveProject`, `loadProject`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
 
 **`@machina/runtime` (Lane 1f, unmerged):** `createApp`, `runCli`, WebSocket on `/ws`, CLI `machina run <dir> --turns N` · `machina test`
 
