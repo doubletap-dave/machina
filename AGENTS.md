@@ -30,7 +30,7 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 |------|--------|--------------|-------|
 | 0 — Frozen contracts | ✅ Done | `WAVE0` → `ec35279` | 13/13 (`pnpm test`) |
 | 1a Compiler | 🔄 In progress | `lane/1a-compiler` @ `machina-1a` | — |
-| 1b Kernel | ⏳ Pending | `lane/1b-kernel` | — |
+| 1b Kernel | ✅ Done (unmerged) | `lane/1b-kernel` @ `f17ef9d` · `machina-1b` | 11/11 (`@machina/simulation`) |
 | 1c Agents | 🔄 In progress | `lane/1c-agents` @ `machina-1c` | — |
 | 1d Persistence | ⏳ Pending | `lane/1d-persistence` | — |
 | 1e Studio | ⏳ Pending | `lane/1e-studio` | — |
@@ -39,7 +39,7 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | 2b RUN instrumentation | ⏳ Blocked on Wave 1 merge | — | — |
 | 3 Dead Channel Lite | ⏳ Blocked on Wave 2 | — | — |
 
-Reports: `docs/reports/wave0.md` · lane reports → `docs/reports/lane-*.md`
+Reports: `docs/reports/wave0.md` · `docs/reports/lane-1b.md` · other lanes → `docs/reports/lane-*.md`
 
 ---
 
@@ -92,7 +92,7 @@ plugins/core/src/
     schemas.ts index.ts
 
 packages/graph/           # Lane 1a — stub until implemented
-packages/simulation/      # Lane 1b
+packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.ts (types internal)
 packages/agents/          # Lane 1c
 packages/persistence/     # Lane 1d
 apps/studio/              # Lane 1e
@@ -114,6 +114,8 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 **`@machina/plugin-core`:** `registerCoreKinds`, 14 kinds v1 (`entities.*`, `cognition.*`, `perception.*`, `systems.*`, `control.*`, `analysis.*`)
 
 **`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`
+
+**`@machina/simulation` (Lane 1b, unmerged):** `createRng`, `createKernel`, `createKernelFromPlan`, `actorIdsFromPlan`, `Kernel`, `ThinkFn` — **`TrueWorldState` is internal only** (`types.ts`, not on index)
 
 ---
 
