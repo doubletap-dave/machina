@@ -36,10 +36,10 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | 1e Studio | ✅ Done (unmerged) | `lane/1e-studio` @ `99f975c` · `machina-1e` | 5/5 (`@machina/studio`) |
 | 1f Runtime | ✅ Done (unmerged) | `lane/1f-runtime` @ `8698742` · `machina-1f` | 6/6 (`@machina/runtime`) |
 | 2a Presets + LLM compose | ⏳ Blocked on Wave 1 merge | — | — |
-| 2b RUN instrumentation | ⏳ Blocked on Wave 1 merge | — | — |
+| 2b RUN instrumentation | ✅ Done (unmerged) | `lane/2b-run` @ `a7847a8` · `machina-2b` | 12/12 sim · 10/10 studio · 7/7 runtime |
 | 3 Dead Channel Lite | ⏳ Blocked on Wave 2 | — | — |
 
-Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md`
+Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2b.md`
 
 ---
 
@@ -93,10 +93,13 @@ plugins/core/src/
 
 packages/graph/           # Lane 1a ✅ — compile.ts flatten.ts validate.ts classify.ts
 packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.ts (types internal)
+                          # Lane 2b ✅ — instrument.ts (InstrumentMsg, onInstrument callback)
 packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell, XYFlow canvas
+apps/studio/src/run/      # Lane 2b ✅ — StanceBar, PossessPanel, AnalyzeTab, stance, speed
 apps/runtime/             # Lane 1f ✅ — app.ts ws.ts cli.ts (bin: machina)
+apps/runtime/src/instrumentation.ts  # Lane 2b ✅ — toWs bridge
 examples/dead-channel-lite/ # Wave 3
 docs/reports/             # Implementation reports (required)
 ```
@@ -171,6 +174,7 @@ pnpm add zod@latest
 | 1d Persistence | `lane/1d-persistence` | `../machina-1d` | `packages/persistence/**` |
 | 1e Studio | `lane/1e-studio` | `../machina-1e` | `apps/studio/**` |
 | 1f Runtime | `lane/1f-runtime` | `../machina-1f` | `apps/runtime/**` |
+| 2b RUN instrumentation | `lane/2b-run` | `../machina-2b` | `apps/studio/src/run/**`, `apps/runtime/src/instrumentation.ts`, `packages/simulation/src/instrument.ts` |
 
 ### Worktree setup (per lane)
 
