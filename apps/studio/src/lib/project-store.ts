@@ -33,9 +33,12 @@ function defaultConfig(registry: NodeRegistry, kind: string, version: number): u
 export function createProjectStore(registry: NodeRegistry) {
   let project = emptyProject();
   let currentGraphId = project.entryGraphId;
+  let selectedNodeId: string | null = null;
+  let revision = 0;
   const listeners = new Set<Listener>();
 
   function emit(): void {
+    revision += 1;
     for (const listener of listeners) {
       listener();
     }
@@ -61,6 +64,10 @@ export function createProjectStore(registry: NodeRegistry) {
     subscribe(listener: Listener): () => void {
       listeners.add(listener);
       return () => listeners.delete(listener);
+    },
+
+    getRevision(): number {
+      return revision;
     },
 
     getProject(): MachinaProject {
@@ -152,6 +159,34 @@ export function createProjectStore(registry: NodeRegistry) {
         return;
       }
       currentGraphId = graph.parentGraphId;
+      selectedNodeId = null;
+      emit();
+    },
+
+    selectNode(nodeId: string | null): void {
+      selectedNodeId = nodeId;
+      emit();
+    },
+
+    getSelectedNodeId(): string | null {
+      return selectedNodeId;
+    },
+
+    updateNodeConfig(nodeId: string, patch: Record<string, unknown>): void {
+      const node = findNode(currentGraph(), nodeId);
+      if (!node) {
+        return;
+      }
+      node.config = { ...(node.config as Record<string, unknown>), ...patch };
+      emit();
+    },
+
+    setNodePosition(nodeId: string, position: { x: number; y: number }): void {
+      const node = findNode(currentGraph(), nodeId);
+      if (!node) {
+        return;
+      }
+      node.position = position;
       emit();
     },
   };
