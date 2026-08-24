@@ -2,6 +2,15 @@
   "name": "@machina/persistence",
   "version": "0.0.0",
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "test": "node -e \"process.exit(0)\"" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.5.7",
+    "@machina/core": "workspace:^",
+    "drizzle-orm": "^0.45.2"
+  }
 }
