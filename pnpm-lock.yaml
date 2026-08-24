@@ -15,7 +15,15 @@ importers:
         specifier: ^3.0.5
         version: 3.2.7
 
+  apps/runtime: {}
+
+  apps/studio: {}
+
+  packages/agents: {}
+
   packages/core: {}
+
+  packages/graph: {}
 
   packages/node-sdk:
     dependencies:
@@ -26,11 +34,24 @@ importers:
         specifier: ^3.24.2
         version: 3.25.76
 
+  packages/persistence: {}
+
+  packages/simulation: {}
+
   packages/ui:
     dependencies:
       '@machina/core':
         specifier: workspace:*
         version: link:../core
+
+  plugins/core:
+    dependencies:
+      '@machina/node-sdk':
+        specifier: workspace:*
+        version: link:../../packages/node-sdk
+      zod:
+        specifier: ^3.24.2
+        version: 3.25.76
 
 packages:
 
