@@ -33,13 +33,13 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | 1b Kernel | ✅ Done (unmerged) | `lane/1b-kernel` @ `f17ef9d` · `machina-1b` | 11/11 (`@machina/simulation`) |
 | 1c Agents | ✅ Done (unmerged) | `lane/1c-agents` @ `a9d703d` · `machina-1c` | 4/4 (`@machina/agents`) |
 | 1d Persistence | ⏳ Pending | `lane/1d-persistence` @ `machina-1d` | — |
-| 1e Studio | 🔄 In progress | `lane/1e-studio` @ `machina-1e` | — |
+| 1e Studio | ✅ Done (unmerged) | `lane/1e-studio` @ `99f975c` · `machina-1e` | 5/5 (`@machina/studio`) |
 | 1f Runtime | ✅ Done (unmerged) | `lane/1f-runtime` @ `8698742` · `machina-1f` | 6/6 (`@machina/runtime`) |
 | 2a Presets + LLM compose | ⏳ Blocked on Wave 1 merge | — | — |
 | 2b RUN instrumentation | ⏳ Blocked on Wave 1 merge | — | — |
 | 3 Dead Channel Lite | ⏳ Blocked on Wave 2 | — | — |
 
-Reports: `docs/reports/wave0.md` · `lane-1b.md` · `lane-1c.md` · `lane-1f.md` · others → `docs/reports/lane-*.md`
+Reports: `docs/reports/wave0.md` · `lane-1b.md` · `lane-1c.md` · `lane-1e.md` · `lane-1f.md` · others → `docs/reports/lane-*.md`
 
 ---
 
@@ -95,7 +95,7 @@ packages/graph/           # Lane 1a — stub until implemented
 packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.ts (types internal)
 packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d
-apps/studio/              # Lane 1e
+apps/studio/              # Lane 1e ✅ — project-store, StudioShell, XYFlow canvas
 apps/runtime/             # Lane 1f ✅ — app.ts ws.ts cli.ts (bin: machina)
 examples/dead-channel-lite/ # Wave 3
 docs/reports/             # Implementation reports (required)
@@ -135,7 +135,7 @@ pnpm --filter @machina/simulation test
 pnpm --filter @machina/agents test
 pnpm --filter @machina/persistence test
 pnpm --filter @machina/studio test
-pnpm --filter @machina/studio dev      # after Lane 1e
+pnpm --filter @machina/studio dev      # Lane 1e (unmerged worktree)
 pnpm --filter @machina/runtime test
 pnpm exec machina test                 # after Lane 1f merge (from apps/runtime)
 pnpm exec machina run ./examples/dead-channel-lite --turns 20
