@@ -29,14 +29,15 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | Wave | Status | Tag / branch | Tests |
 |------|--------|--------------|-------|
 | 0 — Frozen contracts | ✅ Done | `WAVE0` → `ec35279` | 13/13 (`pnpm test`) |
-| 1a Compiler | ✅ Done (unmerged) | `lane/1a-compiler` @ `fea8260` · `machina-1a` | 6/6 (`@machina/graph`) |
-| 1b Kernel | ✅ Done (unmerged) | `lane/1b-kernel` @ `f17ef9d` · `machina-1b` | 11/11 (`@machina/simulation`) |
-| 1c Agents | ✅ Done (unmerged) | `lane/1c-agents` @ `a9d703d` · `machina-1c` | 4/4 (`@machina/agents`) |
-| 1d Persistence | ✅ Done (unmerged) | `lane/1d-persistence` @ `d91ed6b` · `machina-1d` | 4/4 (`@machina/persistence`) |
-| 1e Studio | ✅ Done (unmerged) | `lane/1e-studio` @ `99f975c` · `machina-1e` | 5/5 (`@machina/studio`) |
-| 1f Runtime | ✅ Done (unmerged) | `lane/1f-runtime` @ `8698742` · `machina-1f` | 6/6 (`@machina/runtime`) |
-| 2a Presets + LLM compose | ⏳ Blocked on Wave 1 merge | — | — |
-| 2b RUN instrumentation | ⏳ Blocked on Wave 1 merge | — | — |
+| **1 — Parallel lanes** | **✅ Merged** | **`WAVE1` → `790172d`** | **49/49 (`pnpm test`)** |
+| 1a Compiler | ✅ Merged | `lane/1a-compiler` @ `fea8260` | 6/6 (`@machina/graph`) |
+| 1b Kernel | ✅ Merged | `lane/1b-kernel` @ `f17ef9d` | 11/11 (`@machina/simulation`) |
+| 1c Agents | ✅ Merged | `lane/1c-agents` @ `a9d703d` | 4/4 (`@machina/agents`) |
+| 1d Persistence | ✅ Merged | `lane/1d-persistence` @ `d91ed6b` | 4/4 (`@machina/persistence`) |
+| 1e Studio | ✅ Merged | `lane/1e-studio` @ `99f975c` | 5/5 (`@machina/studio`) |
+| 1f Runtime | ✅ Merged | `lane/1f-runtime` @ `8698742` | 6/6 (`@machina/runtime`) |
+| 2a Presets + LLM compose | ⏳ Ready | — | — |
+| 2b RUN instrumentation | ⏳ Ready | — | — |
 | 3 Dead Channel Lite | ⏳ Blocked on Wave 2 | — | — |
 
 Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md`
@@ -115,15 +116,15 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`
 
-**`@machina/graph` (Lane 1a, unmerged):** `compile`
+**`@machina/graph`:** `compile`
 
-**`@machina/simulation` (Lane 1b, unmerged):** `createRng`, `createKernel`, `createKernelFromPlan`, `actorIdsFromPlan`, `Kernel`, `ThinkFn` — **`TrueWorldState` is internal only** (`types.ts`, not on index)
+**`@machina/simulation`:** `createRng`, `createKernel`, `createKernelFromPlan`, `actorIdsFromPlan`, `Kernel`, `ThinkFn` — **`TrueWorldState` is internal only** (`types.ts`, not on index)
 
-**`@machina/agents` (Lane 1c, unmerged):** `createAgentRuntime`, `compileAgentGraph`, `createAgentCheckpointer`, `PgliteCheckpointer`, `AgentRuntime`, `ThinkResult`, `Usage`
+**`@machina/agents`:** `createAgentRuntime`, `compileAgentGraph`, `createAgentCheckpointer`, `PgliteCheckpointer`, `AgentRuntime`, `ThinkResult`, `Usage`
 
-**`@machina/persistence` (Lane 1d, unmerged):** `saveProject`, `loadProject`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
+**`@machina/persistence`:** `saveProject`, `loadProject`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
 
-**`@machina/runtime` (Lane 1f, unmerged):** `createApp`, `runCli`, WebSocket on `/ws`, CLI `machina run <dir> --turns N` · `machina test`
+**`@machina/runtime`:** `createApp`, `runCli`, WebSocket on `/ws`, CLI `machina run <dir> --turns N` · `machina test`
 
 ---
 
@@ -132,16 +133,16 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 ```powershell
 # Root (from machina/)
 pnpm install
-pnpm test                              # all packages — expect 13+ after Wave 0
+pnpm test                              # all packages — 49/49 after WAVE1
 pnpm --filter @machina/core test
 pnpm --filter @machina/graph test
 pnpm --filter @machina/simulation test
 pnpm --filter @machina/agents test
 pnpm --filter @machina/persistence test
 pnpm --filter @machina/studio test
-pnpm --filter @machina/studio dev      # Lane 1e (unmerged worktree)
+pnpm --filter @machina/studio dev
 pnpm --filter @machina/runtime test
-pnpm exec machina test                 # after Lane 1f merge (from apps/runtime)
+pnpm exec machina test
 pnpm exec machina run ./examples/dead-channel-lite --turns 20
 
 # Add a dependency to a package (example)
@@ -209,5 +210,4 @@ pnpm install
 
 ## Open concerns
 
-- Vitest: `vitest.workspace.ts` is deprecated — migrate to `test.projects` in root `vitest.config.ts` before Vitest 4 (assign to whichever lane touches root config first).
-- Wave 1 stubs still use no-op test scripts until lanes land real Vitest suites.
+- Vitest: `vitest.workspace.ts` is deprecated — migrate to `test.projects` in root `vitest.config.ts` before Vitest 4.
