@@ -9,6 +9,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@machina/core": "workspace:^"
+    "@electric-sql/pglite": "^0.5.7",
+    "@machina/core": "workspace:^",
+    "drizzle-orm": "^0.45.2"
   }
 }
