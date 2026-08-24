@@ -163,6 +163,12 @@ importers:
 
   plugins/core:
     dependencies:
+      '@machina/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@machina/graph':
+        specifier: workspace:*
+        version: link:../../packages/graph
       '@machina/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
