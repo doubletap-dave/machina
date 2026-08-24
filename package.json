@@ -3,11 +3,17 @@
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "dev": "concurrently -n runtime,studio,open -c blue,magenta,green \"pnpm dev:runtime\" \"pnpm dev:studio\" \"pnpm open:studio\"",
+    "dev:studio": "pnpm --filter @machina/studio dev",
+    "dev:runtime": "pnpm --filter @machina/runtime dev",
+    "open:studio": "wait-on -t 120000 http-get://127.0.0.1:3000 && node scripts/open-studio.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "typescript": "^5.7.3",
-    "vitest": "^3.0.5"
+    "vitest": "^3.0.5",
+    "wait-on": "^8.0.3"
   }
 }

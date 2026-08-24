@@ -163,3 +163,12 @@ export function agencyPreset(name: string): Preset {
     extraGraphs: [subgraph],
   };
 }
+
+export function listBuiltinPresets(): Preset[] {
+  return [
+    nationPreset("Atlantic Federation"),
+    nationPreset("Vesper Union"),
+    cabinetPreset("Example Cabinet"),
+    agencyPreset("Example Agency"),
+  ];
+}

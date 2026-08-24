@@ -4,17 +4,22 @@
   "type": "module",
   "exports": { ".": "./src/index.ts" },
   "bin": { "machina": "./src/cli.ts" },
-  "scripts": { "test": "vitest run" },
+  "scripts": {
+    "dev": "tsx watch src/serve.ts",
+    "start": "tsx src/serve.ts",
+    "test": "vitest run"
+  },
   "dependencies": {
     "@machina/core": "workspace:*",
+    "@machina/graph": "workspace:*",
+    "@machina/node-sdk": "workspace:*",
+    "@machina/plugin-core": "workspace:*",
     "ws": "^8.18.1"
   },
   "devDependencies": {
-    "@machina/graph": "workspace:*",
     "@machina/persistence": "workspace:*",
-    "@machina/plugin-core": "workspace:*",
-    "@machina/node-sdk": "workspace:*",
     "@machina/simulation": "workspace:*",
+    "tsx": "^4.19.3",
     "@types/ws": "^8.5.14"
   }
 }

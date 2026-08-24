@@ -132,17 +132,10 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 ```powershell
 # Root (from machina/)
 pnpm install
-pnpm test                              # all packages — 67/67 after Wave 3
-pnpm --filter @machina/core test
-pnpm --filter @machina/graph test
-pnpm --filter @machina/simulation test
-pnpm --filter @machina/agents test
-pnpm --filter @machina/persistence test
-pnpm --filter @machina/studio test
-pnpm --filter @machina/studio dev
-pnpm --filter @machina/runtime test
-pnpm exec machina test
-pnpm exec machina run ./examples/dead-channel-lite --turns 20
+pnpm dev                               # browser: Studio @ :3000 + runtime @ :4000
+pnpm dev:studio                        # Studio only
+pnpm dev:runtime                       # Runtime API only
+pnpm test                              # 67/67 automated tests
 
 # Add a dependency to a package (example)
 cd packages/graph
