@@ -1,0 +1,11 @@
+{
+  "name": "@machina/node-sdk",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "test": "vitest run" },
+  "dependencies": {
+    "@machina/core": "workspace:*",
+    "zod": "^3.24.2"
+  }
+}
