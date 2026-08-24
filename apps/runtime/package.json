@@ -3,5 +3,13 @@
   "version": "0.0.0",
   "type": "module",
   "exports": { ".": "./src/index.ts" },
-  "scripts": { "test": "node -e \"process.exit(0)\"" }
+  "bin": { "machina": "./src/cli.ts" },
+  "scripts": { "test": "vitest run" },
+  "dependencies": {
+    "@machina/core": "workspace:*",
+    "ws": "^8.18.1"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.14"
+  }
 }
