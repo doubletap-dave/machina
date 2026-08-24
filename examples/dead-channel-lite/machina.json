@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "id": "dead-channel-lite",
+  "name": "Dead Channel Lite",
+  "entryGraphId": "entry",
+  "presetRefs": [
+    "preset-nation-atlantic-federation",
+    "preset-nation-vesper-union"
+  ]
+}

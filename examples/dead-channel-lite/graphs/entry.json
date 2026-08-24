@@ -1,0 +1,223 @@
+{
+  "id": "entry",
+  "nodes": [
+    {
+      "id": "clock",
+      "kind": "control.clock",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {
+        "period": "month"
+      }
+    },
+    {
+      "id": "world",
+      "kind": "entities.world",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    },
+    {
+      "id": "atlantic-federation",
+      "kind": "entities.actor",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {
+        "name": "Atlantic Federation"
+      },
+      "subgraphId": "atlantic-federation-sub"
+    },
+    {
+      "id": "vesper-union",
+      "kind": "entities.actor",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {
+        "name": "Vesper Union"
+      },
+      "subgraphId": "vesper-union-sub"
+    },
+    {
+      "id": "relationship",
+      "kind": "systems.relationship",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    },
+    {
+      "id": "diplomacy",
+      "kind": "systems.system",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {
+        "mechanic": "diplomacy"
+      }
+    },
+    {
+      "id": "logger",
+      "kind": "analysis.logger",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    },
+    {
+      "id": "inspector",
+      "kind": "analysis.inspector",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "c1",
+      "sourceNode": "clock",
+      "sourcePort": "tick",
+      "targetNode": "world",
+      "targetPort": "tick"
+    },
+    {
+      "id": "c2",
+      "sourceNode": "clock",
+      "sourcePort": "tick",
+      "targetNode": "diplomacy",
+      "targetPort": "tick"
+    },
+    {
+      "id": "c3",
+      "sourceNode": "clock",
+      "sourcePort": "tick",
+      "targetNode": "relationship",
+      "targetPort": "tick"
+    },
+    {
+      "id": "ct-0",
+      "sourceNode": "clock",
+      "sourcePort": "tick",
+      "targetNode": "atlantic-federation",
+      "targetPort": "tick"
+    },
+    {
+      "id": "ct-1",
+      "sourceNode": "clock",
+      "sourcePort": "tick",
+      "targetNode": "vesper-union",
+      "targetPort": "tick"
+    },
+    {
+      "id": "wp-0",
+      "sourceNode": "world",
+      "sourcePort": "state",
+      "targetNode": "atlantic-federation-perception",
+      "targetPort": "state"
+    },
+    {
+      "id": "wp-1",
+      "sourceNode": "world",
+      "sourcePort": "state",
+      "targetNode": "vesper-union-perception",
+      "targetPort": "state"
+    },
+    {
+      "id": "ap-0",
+      "sourceNode": "atlantic-federation-leader",
+      "sourcePort": "action",
+      "targetNode": "diplomacy",
+      "targetPort": "actions"
+    },
+    {
+      "id": "ap-1",
+      "sourceNode": "atlantic-federation-advisor",
+      "sourcePort": "action",
+      "targetNode": "diplomacy",
+      "targetPort": "actions"
+    },
+    {
+      "id": "ap-2",
+      "sourceNode": "vesper-union-leader",
+      "sourcePort": "action",
+      "targetNode": "diplomacy",
+      "targetPort": "actions"
+    },
+    {
+      "id": "ap-3",
+      "sourceNode": "vesper-union-advisor",
+      "sourcePort": "action",
+      "targetNode": "diplomacy",
+      "targetPort": "actions"
+    },
+    {
+      "id": "ar-0",
+      "sourceNode": "atlantic-federation",
+      "sourcePort": "ref",
+      "targetNode": "diplomacy",
+      "targetPort": "actors"
+    },
+    {
+      "id": "ar-1",
+      "sourceNode": "vesper-union",
+      "sourcePort": "ref",
+      "targetNode": "diplomacy",
+      "targetPort": "actors"
+    },
+    {
+      "id": "rr-0",
+      "sourceNode": "atlantic-federation",
+      "sourcePort": "ref",
+      "targetNode": "relationship",
+      "targetPort": "actors"
+    },
+    {
+      "id": "rr-1",
+      "sourceNode": "vesper-union",
+      "sourcePort": "ref",
+      "targetNode": "relationship",
+      "targetPort": "actors"
+    },
+    {
+      "id": "le1",
+      "sourceNode": "diplomacy",
+      "sourcePort": "events",
+      "targetNode": "logger",
+      "targetPort": "events"
+    },
+    {
+      "id": "le2",
+      "sourceNode": "relationship",
+      "sourcePort": "events",
+      "targetNode": "logger",
+      "targetPort": "events"
+    },
+    {
+      "id": "in1",
+      "sourceNode": "world",
+      "sourcePort": "state",
+      "targetNode": "inspector",
+      "targetPort": "state"
+    }
+  ]
+}

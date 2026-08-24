@@ -1,0 +1,152 @@
+{
+  "id": "vesper-union-sub",
+  "parentNodeId": "vesper-union",
+  "nodes": [
+    {
+      "id": "vesper-union-personality",
+      "kind": "cognition.personality",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    },
+    {
+      "id": "vesper-union-goal",
+      "kind": "cognition.goal",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    },
+    {
+      "id": "vesper-union-memory",
+      "kind": "cognition.memory",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    },
+    {
+      "id": "vesper-union-leader",
+      "kind": "cognition.agent",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {
+        "name": "Head of State",
+        "model": "mock"
+      }
+    },
+    {
+      "id": "vesper-union-advisor",
+      "kind": "cognition.agent",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {
+        "name": "Military",
+        "model": "mock"
+      }
+    },
+    {
+      "id": "vesper-union-perception",
+      "kind": "perception.perception",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "vesper-union-e0",
+      "sourceNode": "vesper-union-personality",
+      "sourcePort": "traits",
+      "targetNode": "vesper-union",
+      "targetPort": "personality"
+    },
+    {
+      "id": "vesper-union-e0b",
+      "sourceNode": "vesper-union-goal",
+      "sourcePort": "goals",
+      "targetNode": "vesper-union",
+      "targetPort": "goals"
+    },
+    {
+      "id": "vesper-union-e0c",
+      "sourceNode": "vesper-union-memory",
+      "sourcePort": "memory",
+      "targetNode": "vesper-union",
+      "targetPort": "memory"
+    },
+    {
+      "id": "vesper-union-e1",
+      "sourceNode": "vesper-union-personality",
+      "sourcePort": "traits",
+      "targetNode": "vesper-union-leader",
+      "targetPort": "personality"
+    },
+    {
+      "id": "vesper-union-e2",
+      "sourceNode": "vesper-union-personality",
+      "sourcePort": "traits",
+      "targetNode": "vesper-union-advisor",
+      "targetPort": "personality"
+    },
+    {
+      "id": "vesper-union-e3",
+      "sourceNode": "vesper-union-goal",
+      "sourcePort": "goals",
+      "targetNode": "vesper-union-leader",
+      "targetPort": "goals"
+    },
+    {
+      "id": "vesper-union-e4",
+      "sourceNode": "vesper-union-goal",
+      "sourcePort": "goals",
+      "targetNode": "vesper-union-advisor",
+      "targetPort": "goals"
+    },
+    {
+      "id": "vesper-union-e5",
+      "sourceNode": "vesper-union-memory",
+      "sourcePort": "memory",
+      "targetNode": "vesper-union-leader",
+      "targetPort": "memory"
+    },
+    {
+      "id": "vesper-union-e6",
+      "sourceNode": "vesper-union-memory",
+      "sourcePort": "memory",
+      "targetNode": "vesper-union-advisor",
+      "targetPort": "memory"
+    },
+    {
+      "id": "vesper-union-e7",
+      "sourceNode": "vesper-union-perception",
+      "sourcePort": "observation",
+      "targetNode": "vesper-union-leader",
+      "targetPort": "observation"
+    },
+    {
+      "id": "vesper-union-e8",
+      "sourceNode": "vesper-union-perception",
+      "sourcePort": "observation",
+      "targetNode": "vesper-union-advisor",
+      "targetPort": "observation"
+    }
+  ],
+  "parentGraphId": "entry"
+}

@@ -1,0 +1,152 @@
+{
+  "id": "atlantic-federation-sub",
+  "parentNodeId": "atlantic-federation",
+  "nodes": [
+    {
+      "id": "atlantic-federation-personality",
+      "kind": "cognition.personality",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    },
+    {
+      "id": "atlantic-federation-goal",
+      "kind": "cognition.goal",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    },
+    {
+      "id": "atlantic-federation-memory",
+      "kind": "cognition.memory",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    },
+    {
+      "id": "atlantic-federation-leader",
+      "kind": "cognition.agent",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {
+        "name": "Head of State",
+        "model": "mock"
+      }
+    },
+    {
+      "id": "atlantic-federation-advisor",
+      "kind": "cognition.agent",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {
+        "name": "Intelligence",
+        "model": "mock"
+      }
+    },
+    {
+      "id": "atlantic-federation-perception",
+      "kind": "perception.perception",
+      "version": 1,
+      "position": {
+        "x": 0,
+        "y": 0
+      },
+      "config": {}
+    }
+  ],
+  "edges": [
+    {
+      "id": "atlantic-federation-e0",
+      "sourceNode": "atlantic-federation-personality",
+      "sourcePort": "traits",
+      "targetNode": "atlantic-federation",
+      "targetPort": "personality"
+    },
+    {
+      "id": "atlantic-federation-e0b",
+      "sourceNode": "atlantic-federation-goal",
+      "sourcePort": "goals",
+      "targetNode": "atlantic-federation",
+      "targetPort": "goals"
+    },
+    {
+      "id": "atlantic-federation-e0c",
+      "sourceNode": "atlantic-federation-memory",
+      "sourcePort": "memory",
+      "targetNode": "atlantic-federation",
+      "targetPort": "memory"
+    },
+    {
+      "id": "atlantic-federation-e1",
+      "sourceNode": "atlantic-federation-personality",
+      "sourcePort": "traits",
+      "targetNode": "atlantic-federation-leader",
+      "targetPort": "personality"
+    },
+    {
+      "id": "atlantic-federation-e2",
+      "sourceNode": "atlantic-federation-personality",
+      "sourcePort": "traits",
+      "targetNode": "atlantic-federation-advisor",
+      "targetPort": "personality"
+    },
+    {
+      "id": "atlantic-federation-e3",
+      "sourceNode": "atlantic-federation-goal",
+      "sourcePort": "goals",
+      "targetNode": "atlantic-federation-leader",
+      "targetPort": "goals"
+    },
+    {
+      "id": "atlantic-federation-e4",
+      "sourceNode": "atlantic-federation-goal",
+      "sourcePort": "goals",
+      "targetNode": "atlantic-federation-advisor",
+      "targetPort": "goals"
+    },
+    {
+      "id": "atlantic-federation-e5",
+      "sourceNode": "atlantic-federation-memory",
+      "sourcePort": "memory",
+      "targetNode": "atlantic-federation-leader",
+      "targetPort": "memory"
+    },
+    {
+      "id": "atlantic-federation-e6",
+      "sourceNode": "atlantic-federation-memory",
+      "sourcePort": "memory",
+      "targetNode": "atlantic-federation-advisor",
+      "targetPort": "memory"
+    },
+    {
+      "id": "atlantic-federation-e7",
+      "sourceNode": "atlantic-federation-perception",
+      "sourcePort": "observation",
+      "targetNode": "atlantic-federation-leader",
+      "targetPort": "observation"
+    },
+    {
+      "id": "atlantic-federation-e8",
+      "sourceNode": "atlantic-federation-perception",
+      "sourcePort": "observation",
+      "targetNode": "atlantic-federation-advisor",
+      "targetPort": "observation"
+    }
+  ],
+  "parentGraphId": "entry"
+}

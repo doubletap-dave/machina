@@ -10,6 +10,11 @@
     "ws": "^8.18.1"
   },
   "devDependencies": {
+    "@machina/graph": "workspace:*",
+    "@machina/persistence": "workspace:*",
+    "@machina/plugin-core": "workspace:*",
+    "@machina/node-sdk": "workspace:*",
+    "@machina/simulation": "workspace:*",
     "@types/ws": "^8.5.14"
   }
 }

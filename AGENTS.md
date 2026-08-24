@@ -36,12 +36,12 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | 1d Persistence | ✅ Merged | `lane/1d-persistence` @ `d91ed6b` | 4/4 (`@machina/persistence`) |
 | 1e Studio | ✅ Merged | `lane/1e-studio` @ `99f975c` | 5/5 (`@machina/studio`) |
 | 1f Runtime | ✅ Merged | `lane/1f-runtime` @ `8698742` | 6/6 (`@machina/runtime`) |
-| **2 — Parallel lanes** | **✅ Merged** | **`WAVE2` (pending tag)** | — |
+| **2 — Parallel lanes** | **✅ Merged** | **`WAVE2` → `3c7aa10`** | **64/64 (`pnpm test`)** |
 | 2a Presets + LLM compose | ✅ Merged | `lane/2a-presets` @ `f18fe39` | 4/4 plugin-core · 9/9 graph · 8/8 studio |
 | 2b RUN instrumentation | ✅ Merged | `lane/2b-run` @ `cc2b41a` | 12/12 sim · 10/10 studio · 7/7 runtime |
-| 3 Dead Channel Lite | ⏳ In progress | — | — |
+| **3 Dead Channel Lite** | **✅ Done** | **`master`** | **67/67 (`pnpm test`)** |
 
-Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md`
+Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md`
 
 ---
 
@@ -97,7 +97,7 @@ packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
 apps/runtime/             # Lane 1f ✅ — app.ts ws.ts cli.ts (bin: machina)
 apps/runtime/src/instrumentation.ts  # Lane 2b ✅ — toWs bridge
-examples/dead-channel-lite/ # Wave 3
+examples/dead-channel-lite/ # Wave 3 ✅ — two nations, 20-turn proof
 docs/reports/             # Implementation reports (required)
 ```
 
@@ -132,7 +132,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 ```powershell
 # Root (from machina/)
 pnpm install
-pnpm test                              # all packages — 49/49 after WAVE1
+pnpm test                              # all packages — 67/67 after Wave 3
 pnpm --filter @machina/core test
 pnpm --filter @machina/graph test
 pnpm --filter @machina/simulation test
