@@ -2,6 +2,13 @@
   "name": "@machina/persistence",
   "version": "0.0.0",
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "test": "node -e \"process.exit(0)\"" }
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@machina/core": "workspace:^"
+  }
 }
