@@ -10,6 +10,39 @@ If code and spec disagree, the spec wins — flag the conflict, don't silently p
 
 ---
 
+## Keep this file current
+
+**Every agent that finishes a wave or lane MUST update this file** before reporting done:
+
+1. **Implementation status** — mark the wave/lane ✅ and note the merge commit or branch tip.
+2. **Commands** — add any new scripts (`dev`, `build`, CLI) discovered during implementation.
+3. **Repo layout** — add new directories or split files when structure changes.
+4. **Frozen exports** — only if Wave 0 contracts change (requires coordinator approval).
+5. **Concerns** — note deprecations, blockers, or follow-ups under **Open concerns**.
+
+Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incomplete.
+
+---
+
+## Implementation status
+
+| Wave | Status | Tag / branch | Tests |
+|------|--------|--------------|-------|
+| 0 — Frozen contracts | ✅ Done | `WAVE0` → `ec35279` | 13/13 (`pnpm test`) |
+| 1a Compiler | 🔄 In progress | `lane/1a-compiler` @ `machina-1a` | — |
+| 1b Kernel | ⏳ Pending | `lane/1b-kernel` | — |
+| 1c Agents | 🔄 In progress | `lane/1c-agents` @ `machina-1c` | — |
+| 1d Persistence | ⏳ Pending | `lane/1d-persistence` | — |
+| 1e Studio | ⏳ Pending | `lane/1e-studio` | — |
+| 1f Runtime | ⏳ Pending | `lane/1f-runtime` | — |
+| 2a Presets + LLM compose | ⏳ Blocked on Wave 1 merge | — | — |
+| 2b RUN instrumentation | ⏳ Blocked on Wave 1 merge | — | — |
+| 3 Dead Channel Lite | ⏳ Blocked on Wave 2 | — | — |
+
+Reports: `docs/reports/wave0.md` · lane reports → `docs/reports/lane-*.md`
+
+---
+
 ## Prime directives
 
 1. **IR-first.** Visual graph ≠ LangGraph graph ≠ kernel graph. Runtime never reads `position`.
@@ -23,45 +56,85 @@ If code and spec disagree, the spec wins — flag the conflict, don't silently p
 
 ## Code rules
 
-- **DRY.** Search before writing. Shared types live in `@machina/core`. Operator copy lives in `@machina/ui`. Node registration lives in `@machina/node-sdk`. Don't duplicate port-matching or English strings.
-- **SRP.** One module, one job. **Target ~200 LOC per file** — split before you grow past it. A 400-line `kinds.ts` is wrong; use `plugins/core/src/kinds/clock.ts`, `actor.ts`, etc.
-- **Frozen contracts.** After Wave 0, do not rename exports in `@machina/core` or `@machina/node-sdk` without coordinating all lanes.
-- **Latest packages.** Use current stable majors. Pin with `pnpm add package@latest` (or workspace catalog). No deprecated APIs.
-- **Modern stack:** Node 22, pnpm 9, TypeScript 5.7+, Vitest 3, Zod 3, Next.js 15, React 19, `@xyflow/react` 12, Tailwind 4, Drizzle, `@electric-sql/pglite`, `@langchain/langgraph` + `@langchain/core`.
+- **DRY.** Search before writing. Shared types → `@machina/core`. Operator copy → `@machina/ui`. Node registration → `@machina/node-sdk`. Port matching → `matchPorts` in core only.
+- **SRP.** One module, one job. **Target ~200 LOC per file** — split before you grow past it.
+- **No manual scaffolding.** Use `pnpm init`, `pnpm create next-app`, `pnpm add package@latest`, and TDD. Do not hand-roll monorepo boilerplate or paste giant files.
+- **Latest packages.** Add deps with `pnpm add <pkg>@latest` from the **owning package** directory (or `-w` for root devDeps). No deprecated APIs.
+- **Frozen contracts.** Do not rename Wave 0 exports without coordinating all lanes.
 - **TDD.** Failing test → minimal code → refactor. Engine tests: no network, no real LLM.
-- **No narrating comments.** Comments explain non-obvious intent only.
+- **No narrating comments.**
+
+### Stack (pin @latest at implementation time)
+
+Node 22 · pnpm 9 · TypeScript 5.7+ · Vitest 3 · Zod 3 · Next.js 15 · React 19 · `@xyflow/react` 12 · Tailwind 4 · Drizzle · `@electric-sql/pglite` · `@langchain/langgraph` · `@langchain/core`
 
 ---
 
-## Repo layout
+## Repo layout (current)
 
 ```
-apps/studio/          Next.js client — BUILD/RUN/ANALYZE UI
-apps/runtime/         HTTP + WS + CLI
-packages/core/        IR, ports, packets, plan types (FROZEN after Wave 0)
-packages/graph/       Compiler
-packages/simulation/  World kernel (no LangGraph)
-packages/agents/      LangGraph cognition only
-packages/persistence/ PGlite + project folders
-packages/node-sdk/    defineNode + registry
-packages/ui/          Operator English + design tokens
-plugins/core/         V0 node kinds + presets
-examples/dead-channel-lite/
+package.json              pnpm workspace root
+pnpm-workspace.yaml
+tsconfig.base.json
+vitest.workspace.ts       # TODO: migrate to vitest.config.ts test.projects (Vitest 4)
+.nvmrc                    # 22
+
+packages/core/src/
+  ports.ts errors.ts match-ports.ts ir.ts plan.ts events.ts packets.ts index.ts
+packages/node-sdk/src/
+  define-node.ts index.ts
+packages/ui/src/
+  english.ts tokens.ts index.ts
+plugins/core/src/
+  index.ts
+  kinds/
+    control.ts entities.ts cognition.ts perception.ts systems.ts analysis.ts
+    schemas.ts index.ts
+
+packages/graph/           # Lane 1a — stub until implemented
+packages/simulation/      # Lane 1b
+packages/agents/          # Lane 1c
+packages/persistence/     # Lane 1d
+apps/studio/              # Lane 1e
+apps/runtime/             # Lane 1f
+examples/dead-channel-lite/ # Wave 3
+docs/reports/             # Implementation reports (required)
 ```
 
 Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internals.
 
 ---
 
+## Frozen exports (Wave 0 — do not rename)
+
+**`@machina/core`:** `PortType`, `PortDef`, `Cardinality`, `MachinaError`, `machinaError`, `matchPorts`, `MachinaProject`, `GraphDocument`, `MachinaNode`, `MachinaEdge`, `Wire`, `SimulationPlan`, `ObservationPacket`, `MachinaEvent`, `AgentAction`, `stripPositions`
+
+**`@machina/node-sdk`:** `defineNode`, `NodeDefinition`, `NodeRegistry`, `createRegistry`
+
+**`@machina/plugin-core`:** `registerCoreKinds`, 14 kinds v1 (`entities.*`, `cognition.*`, `perception.*`, `systems.*`, `control.*`, `analysis.*`)
+
+**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`
+
+---
+
 ## Commands
 
 ```powershell
+# Root (from machina/)
 pnpm install
-pnpm test                          # all packages
+pnpm test                              # all packages — expect 13+ after Wave 0
 pnpm --filter @machina/core test
 pnpm --filter @machina/graph test
-pnpm --filter @machina/studio dev
-pnpm --filter @machina/runtime dev
+pnpm --filter @machina/simulation test
+pnpm --filter @machina/agents test
+pnpm --filter @machina/persistence test
+pnpm --filter @machina/studio test
+pnpm --filter @machina/studio dev      # after Lane 1e
+pnpm --filter @machina/runtime dev     # after Lane 1f
+
+# Add a dependency to a package (example)
+cd packages/graph
+pnpm add zod@latest
 ```
 
 ---
@@ -70,35 +143,59 @@ pnpm --filter @machina/runtime dev
 
 - Conventional commits: `feat:`, `test:`, `fix:`, `docs:`, `chore:`, `refactor:`.
 - One logical change per commit. Run tests before commit.
+- Tag freeze points: `WAVE0`, `WAVE1`, etc.
 
 ---
 
-## Parallel execution (mandatory for Wave 1+)
+## Parallel execution (Wave 1+)
 
-| Lane | Branch | Owns (only these paths) |
-|------|--------|-------------------------|
-| 1a Compiler | `lane/1a-compiler` | `packages/graph/**` |
-| 1b Kernel | `lane/1b-kernel` | `packages/simulation/**` |
-| 1c Agents | `lane/1c-agents` | `packages/agents/**` |
-| 1d Persistence | `lane/1d-persistence` | `packages/persistence/**` |
-| 1e Studio | `lane/1e-studio` | `apps/studio/**` |
-| 1f Runtime | `lane/1f-runtime` | `apps/runtime/**` |
+### Lane ownership — only edit your paths
 
-- **Never edit another lane's files** to "fix" something — report BLOCKED instead.
-- Wave 0 is sequential (one implementer). Wave 1: six implementers in parallel via git worktrees.
-- Reports go to `docs/reports/<lane>-<task>.md`.
+| Lane | Branch | Worktree | Owns |
+|------|--------|----------|------|
+| 1a Compiler | `lane/1a-compiler` | `../machina-1a` | `packages/graph/**` |
+| 1b Kernel | `lane/1b-kernel` | `../machina-1b` | `packages/simulation/**` |
+| 1c Agents | `lane/1c-agents` | `../machina-1c` | `packages/agents/**` |
+| 1d Persistence | `lane/1d-persistence` | `../machina-1d` | `packages/persistence/**` |
+| 1e Studio | `lane/1e-studio` | `../machina-1e` | `apps/studio/**` |
+| 1f Runtime | `lane/1f-runtime` | `../machina-1f` | `apps/runtime/**` |
+
+### Worktree setup (per lane)
+
+```powershell
+cd C:\Users\axolatl-tank\Projects\machina
+git worktree add C:\Users\axolatl-tank\Projects\machina-1a -b lane/1a-compiler WAVE0
+cd C:\Users\axolatl-tank\Projects\machina-1a
+pnpm install
+```
+
+- **Never edit another lane's files** — report `BLOCKED` instead.
+- May **read** `@machina/core`, `@machina/node-sdk`, `@machina/ui`, `@machina/plugin-core`; do not modify them from a lane worktree.
+
+### Merge order (after all six lanes pass)
+
+`1a` → `1d` → `1b` → `1c` → `1f` → `1e` → tag `WAVE1` → update this file.
 
 ---
 
 ## Subagent workflow
 
-1. Read AGENTS.md + your lane plan + Global Constraints from orchestrator plan.
+1. Read **AGENTS.md** + your lane plan + Global Constraints from orchestrator plan.
 2. TDD each task. Commit per task.
-3. Self-review, then report: Status, commits, test summary, report path.
-4. Do not read other plan files unless your lane depends on them.
+3. Replace stub `node -e "process.exit(0)"` test scripts with real Vitest.
+4. Write `docs/reports/lane-<id>.md` with TDD evidence.
+5. **Update AGENTS.md** implementation status for your lane.
+6. Report: Status, commits, test summary, report path.
 
 ---
 
 ## Package names
 
-`@machina/core`, `@machina/node-sdk`, `@machina/ui`, `@machina/graph`, `@machina/simulation`, `@machina/agents`, `@machina/persistence`, `@machina/plugin-core`, `@machina/studio`, `@machina/runtime`
+`@machina/core` · `@machina/node-sdk` · `@machina/ui` · `@machina/graph` · `@machina/simulation` · `@machina/agents` · `@machina/persistence` · `@machina/plugin-core` · `@machina/studio` · `@machina/runtime`
+
+---
+
+## Open concerns
+
+- Vitest: `vitest.workspace.ts` is deprecated — migrate to `test.projects` in root `vitest.config.ts` before Vitest 4 (assign to whichever lane touches root config first).
+- Wave 1 stubs still use no-op test scripts until lanes land real Vitest suites.
