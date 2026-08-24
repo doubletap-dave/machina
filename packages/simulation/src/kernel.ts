@@ -1,4 +1,5 @@
 import type { MachinaEvent } from "@machina/core";
+import type { InstrumentMsg } from "./instrument.ts";
 import { createRng } from "./rng.ts";
 import type { Kernel, ThinkFn, TrueWorldState } from "./types.ts";
 
@@ -57,6 +58,7 @@ export function createKernel(opts: {
   seed: number;
   actorIds: string[];
   think: ThinkFn;
+  onInstrument?: (msg: InstrumentMsg) => void;
 }): Kernel {
   const rng = createRng(opts.seed);
   let state = createInitialState(opts.actorIds);
@@ -116,6 +118,8 @@ export function createKernel(opts: {
       } else {
         state.turn += 1;
       }
+
+      opts.onInstrument?.({ type: "turn", turn: state.turn });
 
       events.push(nextEvent(state.turn, "tick", {}));
 
