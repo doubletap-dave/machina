@@ -134,6 +134,28 @@ describe("createKernel", () => {
     const kernel = createKernel({ seed: 1, actorIds: ["a"], think: waitThink });
     expect(() => kernel.peekPacket("ghost")).toThrow("Unknown actor: ghost");
   });
+
+  it("peekPacket does not desync think packets for the same seed", async () => {
+    const thinkPackets = async (peekFirst: boolean) => {
+      const packets: ObservationPacket[] = [];
+      const kernel = createKernel({
+        seed: 7,
+        actorIds: ["a", "b"],
+        think: async ({ packet }) => {
+          packets.push(packet);
+          return { actorId: packet.actorId, type: "wait", params: {} };
+        },
+      });
+      if (peekFirst) {
+        kernel.peekPacket("a");
+        kernel.peekPacket("b");
+      }
+      await kernel.runTurn();
+      return packets;
+    };
+
+    expect(await thinkPackets(true)).toEqual(await thinkPackets(false));
+  });
 });
 
 describe("package exports", () => {

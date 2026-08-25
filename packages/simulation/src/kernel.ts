@@ -95,7 +95,7 @@ export function createKernel(opts: {
       if (!(actorId in state.actors)) {
         throw new Error(`Unknown actor: ${actorId}`);
       }
-      return buildPacket(state, actorId, rng);
+      return buildPacket(state, actorId, rng.clone());
     },
 
     rewind(turn) {
