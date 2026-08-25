@@ -45,7 +45,7 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | Models and credentials | ✅ Done | `master` @ `2c23ff7` | 33/33 engine · 26/26 runtime · 10/10 client · 5/5 plugin-core · 99/99 studio |
 | Kind author | ✅ Done | `master` @ `176c7dd` | 37/37 engine · 27/27 runtime · 7/7 node-sdk · 112/112 studio |
 | Studio themes-fonts | ✅ Done | `master` @ `2d0b80b` | 12/12 (`@machina/ui`) · 119/119 (`@machina/studio`) |
-| Studio and engine complete | ✅ Done | `master` @ `f701702` | **336/336 (`pnpm test`)** |
+| Studio and engine complete | ✅ Done | `master` @ `8bd8f6e` | **336/336 (`pnpm test`)** |
 
 Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md` · `lane-studio-models.md` · `lane-studio-kind-author.md` · `lane-studio-themes-fonts.md` · `lane-studio-and-engine-complete.md`
 
@@ -167,7 +167,7 @@ pnpm test                              # 336/336 workspace automated tests
 pnpm --filter @machina/engine test     # 37/37 in-process engine (credentials, list-models, createLlmThink, kind start-refuse, getGodView)
 pnpm --filter @machina/runtime test    # 29/29 including settings HTTP + compose + kind compile/start + GET /runs/:id/truth
 pnpm --filter @machina/client test     # 12/12 HTTP + WS + settings + compose + getTruth + applyIntervention
-pnpm --filter @machina/studio test     # 153/153 including Inspector fields, GodInspector, canvas flow-sync/dnd, starter compile
+pnpm --filter @machina/studio test     # 153/153 including Inspector fields, GodInspector, canvas flow-sync/dnd, starter compile (count includes 1 untracked compose-proposer test)
 
 # Add a dependency to a package (example)
 cd packages/graph

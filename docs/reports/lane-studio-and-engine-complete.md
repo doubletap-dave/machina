@@ -4,7 +4,7 @@
 **Lane:** `lane/studio-and-engine-complete`  
 **Spec:** `docs/superpowers/specs/2026-08-25-studio-and-engine-complete-design.md`  
 **Plan:** `docs/superpowers/plans/2026-08-25-studio-and-engine-complete.md`  
-**Code tip:** `f701702`
+**Code tip:** `8bd8f6e`
 
 ## Status
 
@@ -34,8 +34,9 @@
 | `531cc6b` | feat: drive the canvas with React Flow state drop snap and minimap |
 | `8fd3ea2` | fix: skip canvas echo by revision not a boolean latch |
 | `f701702` | feat: fill starter world logger and inspector configs |
+| `8bd8f6e` | docs: record studio and engine complete |
 
-Docs commit follows this report.
+Pointer commit that retargets this tip at `8bd8f6e` follows.
 
 ## TDD evidence
 
