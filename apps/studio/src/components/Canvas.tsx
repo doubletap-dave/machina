@@ -59,7 +59,7 @@ export function Canvas({
   onEdgeError,
   skipAnimations = false,
   runPaused = false,
-  onPossessNode = () => {},
+  onPossessNode,
 }: CanvasProps) {
   const store = useProjectSnapshot();
   const registry = useRegistry();
@@ -164,6 +164,11 @@ export function Canvas({
     setSelectedEdgeIds(new Set());
   }, [store]);
 
+  const onPaneContextMenu = useCallback((event: MouseEvent) => {
+    event.preventDefault();
+    setMenu(null);
+  }, []);
+
   const onNodeContextMenu = useCallback(
     (event: MouseEvent, node: Node) => {
       event.preventDefault();
@@ -258,6 +263,7 @@ export function Canvas({
         onNodeContextMenu={onNodeContextMenu}
         onEdgeContextMenu={onEdgeContextMenu}
         onPaneClick={onPaneClick}
+        onPaneContextMenu={onPaneContextMenu}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         proOptions={{ hideAttribution: true }}

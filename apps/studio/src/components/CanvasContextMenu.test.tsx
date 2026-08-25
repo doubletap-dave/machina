@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CanvasContextMenu } from "./CanvasContextMenu";
@@ -143,5 +143,56 @@ describe("CanvasContextMenu", () => {
     );
 
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it("dismisses on Escape and document click-away, but not clicks on the menu", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+
+    render(
+      <>
+        <button type="button">away</button>
+        <CanvasContextMenu
+          target={{ type: "edge", id: "e1" }}
+          x={200}
+          y={200}
+          runPaused={false}
+          store={mockStore()}
+          onMessage={() => {}}
+          onClose={onClose}
+        />
+      </>,
+    );
+
+    fireEvent.pointerDown(screen.getByRole("menu"));
+    expect(onClose).not.toHaveBeenCalled();
+
+    await user.keyboard("{Escape}");
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    onClose.mockClear();
+    await user.click(screen.getByRole("button", { name: "away" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("possess without onPossessNode reports the frozen English message even if paused", async () => {
+    const user = userEvent.setup();
+    const onMessage = vi.fn();
+
+    render(
+      <CanvasContextMenu
+        target={{ type: "node", id: "actor-1", nodeKind: "entities.actor" }}
+        x={0}
+        y={0}
+        runPaused={true}
+        store={mockStore()}
+        onMessage={onMessage}
+        onClose={() => {}}
+      />,
+    );
+
+    await user.click(screen.getByRole("menuitem", { name: "Possess" }));
+
+    expect(onMessage).toHaveBeenCalledWith(POSSESS_NEEDS_PAUSE);
   });
 });

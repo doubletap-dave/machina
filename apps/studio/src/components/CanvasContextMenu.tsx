@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 const POSSESS_NEEDS_PAUSE = "Pause a run to possess this actor.";
 
 export type CanvasContextMenuTarget =
@@ -18,7 +20,7 @@ export type CanvasContextMenuProps = {
   y: number;
   runPaused: boolean;
   store: CanvasContextMenuStore;
-  onPossessNode: (id: string) => void;
+  onPossessNode?: (id: string) => void;
   onMessage: (message: string) => void;
   onClose: () => void;
 };
@@ -33,6 +35,37 @@ export function CanvasContextMenu({
   onMessage,
   onClose,
 }: CanvasContextMenuProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!target) {
+      return;
+    }
+
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key !== "Escape") {
+        return;
+      }
+      event.preventDefault();
+      onClose();
+    }
+
+    function onPointerDown(event: PointerEvent): void {
+      const node = event.target;
+      if (node instanceof Node && menuRef.current?.contains(node)) {
+        return;
+      }
+      onClose();
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [onClose, target]);
+
   if (!target) {
     return null;
   }
@@ -65,7 +98,7 @@ export function CanvasContextMenu({
                   label: "Possess",
                   onSelect: () =>
                     run(() => {
-                      if (!runPaused) {
+                      if (!runPaused || !onPossessNode) {
                         onMessage(POSSESS_NEEDS_PAUSE);
                         return;
                       }
@@ -78,6 +111,7 @@ export function CanvasContextMenu({
 
   return (
     <div
+      ref={menuRef}
       role="menu"
       aria-label="Canvas context menu"
       className="fixed z-50 min-w-36 rounded border border-neutral-700 bg-neutral-900 py-1 shadow-xl"
