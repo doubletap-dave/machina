@@ -1,7 +1,7 @@
-import type { MachinaEvent, ObservationPacket } from "@machina/core";
+import type { AgentPacket, MachinaEvent, ObservationPacket } from "@machina/core";
 import type { InstrumentMsg } from "./instrument.ts";
 import { createRng } from "./rng.ts";
-import type { Kernel, ThinkFn, TrueWorldState } from "./types.ts";
+import type { CreateKernelOpts, Kernel, TrueWorldState } from "./types.ts";
 
 type PendingIntervention = {
   path: string;
@@ -13,10 +13,13 @@ function cloneState(state: TrueWorldState): TrueWorldState {
   return structuredClone(state);
 }
 
-function createInitialState(actorIds: string[]): TrueWorldState {
+function createInitialState(
+  actorIds: string[],
+  actorNames?: Record<string, string>,
+): TrueWorldState {
   const actors: TrueWorldState["actors"] = {};
   for (const actorId of actorIds) {
-    actors[actorId] = { name: actorId, resources: { economy: 50 } };
+    actors[actorId] = { name: actorNames?.[actorId] ?? actorId, resources: { economy: 50 } };
   }
   return { turn: 0, actors };
 }
@@ -33,39 +36,54 @@ function applyPath(state: TrueWorldState, path: string, value: unknown): void {
   actor.resources[resource] = value as number;
 }
 
+function observationNoise(rng: { next(): number }, fog?: number): number {
+  const amplitude = 7 * (fog === undefined ? 1 : fog / 50);
+  return rng.next() > 0.5 ? amplitude : -amplitude;
+}
+
 function buildPacket(
   state: TrueWorldState,
   actorId: string,
   rng: { next(): number },
+  packets?: Record<string, AgentPacket>,
+  fog?: number,
 ): ObservationPacket {
-  const noise = rng.next() > 0.5 ? 7 : -7;
+  const wired = packets?.[actorId];
   return {
     actorId,
     turn: state.turn,
     observations: [
       {
         attribute: "enemy.economy",
-        value: 50 + noise,
+        value: 50 + observationNoise(rng, fog),
         confidence: 0.5,
         ageTurns: 0,
         source: "osint",
       },
     ],
-    memory: null,
-    goals: null,
-    personality: null,
+    memory: wired?.memory ?? null,
+    goals: wired?.goals ?? null,
+    personality: wired?.personality ?? null,
     legalActions: ["wait", "signal"],
   };
 }
 
-export function createKernel(opts: {
-  seed: number;
-  actorIds: string[];
-  think: ThinkFn;
-  onInstrument?: (msg: InstrumentMsg) => void;
-}): Kernel {
+function emitLog(
+  onInstrument: ((msg: InstrumentMsg) => void) | undefined,
+  enabled: boolean | undefined,
+  record: "event" | "action",
+  turn: number,
+  payload: unknown,
+): void {
+  if (!enabled) {
+    return;
+  }
+  onInstrument?.({ type: "log", record, turn, payload });
+}
+
+export function createKernel(opts: CreateKernelOpts): Kernel {
   const rng = createRng(opts.seed);
-  let state = createInitialState(opts.actorIds);
+  let state = createInitialState(opts.actorIds, opts.actorNames);
   const snapshots = new Map<number, TrueWorldState>([[0, cloneState(state)]]);
   let pendingIntervention: PendingIntervention | null = null;
   let eventCounter = 0;
@@ -95,7 +113,7 @@ export function createKernel(opts: {
       if (!(actorId in state.actors)) {
         throw new Error(`Unknown actor: ${actorId}`);
       }
-      return buildPacket(state, actorId, rng.clone());
+      return buildPacket(state, actorId, rng.clone(), opts.packets, opts.fog);
     },
 
     rewind(turn) {
@@ -117,13 +135,13 @@ export function createKernel(opts: {
       if (this.paused && pendingIntervention) {
         applyPath(state, pendingIntervention.path, pendingIntervention.value);
         state.turn += 1;
-        events.push(
-          nextEvent(state.turn, "intervention", {
-            path: pendingIntervention.path,
-            value: pendingIntervention.value,
-            noticeable: pendingIntervention.noticeable,
-          }),
-        );
+        const intervention = nextEvent(state.turn, "intervention", {
+          path: pendingIntervention.path,
+          value: pendingIntervention.value,
+          noticeable: pendingIntervention.noticeable,
+        });
+        events.push(intervention);
+        emitLog(opts.onInstrument, opts.logEvents, "event", state.turn, intervention);
         pendingIntervention = null;
         this.paused = false;
       } else {
@@ -132,7 +150,9 @@ export function createKernel(opts: {
 
       opts.onInstrument?.({ type: "turn", turn: state.turn });
 
-      events.push(nextEvent(state.turn, "tick", {}));
+      const tick = nextEvent(state.turn, "tick", {});
+      events.push(tick);
+      emitLog(opts.onInstrument, opts.logEvents, "event", state.turn, tick);
 
       for (const actorId of opts.actorIds) {
         opts.onInstrument?.({ type: "node-active", nodeId: actorId });
@@ -142,7 +162,7 @@ export function createKernel(opts: {
           to: actorId,
           portType: "OBSERVATION",
         });
-        const packet = buildPacket(state, actorId, rng);
+        const packet = buildPacket(state, actorId, rng, opts.packets, opts.fog);
         const action = await opts.think({ nodeId: actorId, packet });
         opts.onInstrument?.({
           type: "edge-pulse",
@@ -151,6 +171,7 @@ export function createKernel(opts: {
           portType: "ACTION",
         });
         events.push(nextEvent(state.turn, "action", action));
+        emitLog(opts.onInstrument, opts.logActions, "action", state.turn, action);
       }
 
       const snapshot = cloneState(state);

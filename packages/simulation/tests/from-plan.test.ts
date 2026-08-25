@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emptyAgentPacket, type SimulationPlan } from "@machina/core";
+import { emptyAgentPacket, type InstrumentMsg, type SimulationPlan } from "@machina/core";
 import { actorIdsFromPlan, createKernelFromPlan } from "../src/index.ts";
 
 const plan: SimulationPlan = {
@@ -38,5 +38,113 @@ describe("createKernelFromPlan", () => {
     });
 
     expect(Object.keys(kernel.getTruth().actors).sort()).toEqual(["a", "b"]);
+  });
+
+  it("puts wired personality on the think packet", async () => {
+    const wired: SimulationPlan = {
+      ...plan,
+      agents: [
+        {
+          nodeId: "agent-a",
+          actorRef: "a",
+          graphRef: "g1",
+          packetWires: [],
+          packet: {
+            personality: { aggression: 80, paranoia: 10, cooperation: 50, risk: 50 },
+            goals: { statement: "Hold the canal", priority: 90 },
+            memory: { seed: "Last winter was hard." },
+          },
+        },
+      ],
+      systems: [
+        {
+          nodeId: "a",
+          kind: "entities.actor",
+          config: { name: "Ada" },
+          wires: [],
+        },
+      ],
+      analysis: [
+        {
+          nodeId: "log",
+          kind: "analysis.logger",
+          config: { record: "actions" },
+          wires: [],
+        },
+      ],
+    };
+    const logs: InstrumentMsg[] = [];
+    const kernel = createKernelFromPlan(wired, {
+      seed: 1,
+      onInstrument: (msg) => logs.push(msg),
+      think: async ({ packet }) => {
+        expect(packet.personality).toEqual(wired.agents[0]!.packet.personality);
+        expect((packet.goals as { statement: string }).statement).toBe("Hold the canal");
+        expect(packet.memory).toEqual({ seed: "Last winter was hard." });
+        return { actorId: packet.actorId, type: "wait", params: {} };
+      },
+    });
+    expect(kernel.getTruth().actors.a?.name).toBe("Ada");
+    await kernel.runTurn();
+    expect(logs.some((m) => m.type === "log" && m.record === "action")).toBe(true);
+    expect(logs.some((m) => m.type === "log" && m.record === "event")).toBe(false);
+  });
+
+  it("scales observation noise by perception fog", async () => {
+    const fogged: SimulationPlan = {
+      ...plan,
+      agents: [
+        {
+          nodeId: "agent-a",
+          actorRef: "a",
+          graphRef: "g1",
+          packetWires: [],
+          packet: emptyAgentPacket(),
+        },
+      ],
+      perception: [{ nodeId: "perc", config: { fog: 0 }, wires: [] }],
+    };
+    let observed: number | undefined;
+    const kernel = createKernelFromPlan(fogged, {
+      seed: 1,
+      think: async ({ packet }) => {
+        observed = packet.observations[0]?.value as number;
+        return { actorId: packet.actorId, type: "wait", params: {} };
+      },
+    });
+    await kernel.runTurn();
+    expect(observed).toBe(50);
+  });
+
+  it("emits event logs when logger record is events", async () => {
+    const logged: SimulationPlan = {
+      ...plan,
+      agents: [
+        {
+          nodeId: "agent-a",
+          actorRef: "a",
+          graphRef: "g1",
+          packetWires: [],
+          packet: emptyAgentPacket(),
+        },
+      ],
+      analysis: [
+        {
+          nodeId: "log",
+          kind: "analysis.logger",
+          config: { record: "events" },
+          wires: [],
+        },
+      ],
+    };
+    const logs: InstrumentMsg[] = [];
+    const kernel = createKernelFromPlan(logged, {
+      seed: 1,
+      onInstrument: (msg) => logs.push(msg),
+      think: async ({ packet }) => ({ actorId: packet.actorId, type: "wait", params: {} }),
+    });
+    await kernel.runTurn();
+    expect(logs.some((m) => m.type === "log" && m.record === "event")).toBe(true);
+    expect(logs.some((m) => m.type === "log" && m.record === "action")).toBe(false);
   });
 });

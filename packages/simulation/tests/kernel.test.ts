@@ -105,6 +105,58 @@ describe("createKernel", () => {
     const typed: ObservationPacket = packet!;
     expect(typed.legalActions).toEqual(["wait", "signal"]);
     expect(typed.observations.length).toBeGreaterThan(0);
+    expect(typed.personality).toBeNull();
+    expect(typed.goals).toBeNull();
+    expect(typed.memory).toBeNull();
+    expect("truth" in typed).toBe(false);
+  });
+
+  it("uses actorNames and packets from kernel opts", async () => {
+    const think = vi.fn<ThinkFn>(async ({ packet }) => ({
+      actorId: packet.actorId,
+      type: "wait",
+      params: {},
+    }));
+    const kernel = createKernel({
+      seed: 1,
+      actorIds: ["a"],
+      actorNames: { a: "Ada" },
+      packets: {
+        a: {
+          personality: { aggression: 1 },
+          goals: { statement: "Hold" },
+          memory: { seed: "winter" },
+        },
+      },
+      think,
+    });
+    expect(kernel.getTruth().actors.a?.name).toBe("Ada");
+    await kernel.runTurn();
+    const packet = think.mock.calls[0]?.[0]?.packet;
+    expect(packet?.personality).toEqual({ aggression: 1 });
+    expect(packet?.goals).toEqual({ statement: "Hold" });
+    expect(packet?.memory).toEqual({ seed: "winter" });
+  });
+
+  it("scales observation noise by fog and emits logger instruments", async () => {
+    const packets: ObservationPacket[] = [];
+    const msgs: InstrumentMsg[] = [];
+    const kernel = createKernel({
+      seed: 1,
+      actorIds: ["a"],
+      fog: 0,
+      logActions: true,
+      logEvents: false,
+      onInstrument: (m) => msgs.push(m),
+      think: async ({ packet }) => {
+        packets.push(packet);
+        return { actorId: packet.actorId, type: "wait", params: {} };
+      },
+    });
+    await kernel.runTurn();
+    expect(packets[0]?.observations[0]?.value).toBe(50);
+    expect(msgs.some((m) => m.type === "log" && m.record === "action")).toBe(true);
+    expect(msgs.some((m) => m.type === "log" && m.record === "event")).toBe(false);
   });
 
   it("peekPacket matches think packet shape and has no truth field", async () => {
