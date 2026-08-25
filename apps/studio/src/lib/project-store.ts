@@ -10,6 +10,12 @@ import type { NodeRegistry } from "@machina/node-sdk";
 import type { Preset } from "@machina/plugin-core";
 import { materializePreset } from "@/presets/materialize-preset.ts";
 import { starterProject } from "@/templates/starter.ts";
+import {
+  deleteEdgesFromProject,
+  deleteNodesFromProject,
+  duplicateNodesInProject,
+} from "./graph-edit.ts";
+import { createUndoStack, type EditorSnapshot } from "./undo-stack.ts";
 
 type Listener = () => void;
 
@@ -30,6 +36,9 @@ export function createProjectStore(registry: NodeRegistry) {
   let currentGraphId = project.entryGraphId;
   let selectedNodeId: string | null = null;
   let revision = 0;
+  let dragging = false;
+  const history = createUndoStack(50);
+  const redos: EditorSnapshot[] = [];
   const listeners = new Set<Listener>();
 
   function emit(): void {
@@ -55,6 +64,25 @@ export function createProjectStore(registry: NodeRegistry) {
     return graph.nodes.find((node) => node.id === nodeId);
   }
 
+  function snapshot(): EditorSnapshot {
+    return {
+      project: structuredClone(project),
+      currentGraphId,
+      selectedNodeId,
+    };
+  }
+
+  function applySnapshot(next: EditorSnapshot): void {
+    project = structuredClone(next.project);
+    currentGraphId = next.currentGraphId;
+    selectedNodeId = next.selectedNodeId;
+  }
+
+  function record(): void {
+    history.push(snapshot());
+    redos.length = 0;
+  }
+
   return {
     subscribe(listener: Listener): () => void {
       listeners.add(listener);
@@ -73,6 +101,9 @@ export function createProjectStore(registry: NodeRegistry) {
       project = structuredClone(next);
       currentGraphId = project.entryGraphId;
       selectedNodeId = null;
+      dragging = false;
+      history.clear();
+      redos.length = 0;
       emit();
     },
 
@@ -199,6 +230,7 @@ export function createProjectStore(registry: NodeRegistry) {
       if (!node) {
         return;
       }
+      record();
       node.config = { ...(node.config as Record<string, unknown>), ...patch };
       emit();
     },
@@ -212,6 +244,86 @@ export function createProjectStore(registry: NodeRegistry) {
       graph.nodes = graph.nodes.map((candidate) =>
         candidate.id === nodeId ? { ...candidate, position } : candidate,
       );
+      emit();
+    },
+
+    deleteNodes(ids: string[]): void {
+      const graph = currentGraph();
+      const existing = ids.filter((id) => findNode(graph, id));
+      if (existing.length === 0) {
+        return;
+      }
+      record();
+      const removed = deleteNodesFromProject(project, graph, existing);
+      if (selectedNodeId && removed.includes(selectedNodeId)) {
+        selectedNodeId = null;
+      }
+      if (!graphById(currentGraphId)) {
+        currentGraphId = project.entryGraphId;
+      }
+      emit();
+    },
+
+    deleteEdges(ids: string[]): void {
+      const idSet = new Set(ids);
+      const exists = project.graphs.some((graph) =>
+        graph.edges.some((edge) => idSet.has(edge.id)),
+      );
+      if (!exists) {
+        return;
+      }
+      record();
+      deleteEdgesFromProject(project, ids);
+      emit();
+    },
+
+    duplicateNodes(ids: string[]): string[] {
+      const graph = currentGraph();
+      const existing = ids.filter((id) => findNode(graph, id));
+      if (existing.length === 0) {
+        return [];
+      }
+      record();
+      const newIds = duplicateNodesInProject(project, graph, existing);
+      selectedNodeId = newIds.at(-1) ?? selectedNodeId;
+      emit();
+      return newIds;
+    },
+
+    beginDrag(nodeId: string): void {
+      if (dragging) {
+        return;
+      }
+      if (!findNode(currentGraph(), nodeId)) {
+        return;
+      }
+      dragging = true;
+      record();
+    },
+
+    endDrag(): void {
+      dragging = false;
+    },
+
+    undo(): void {
+      const prev = history.undo();
+      if (!prev) {
+        return;
+      }
+      dragging = false;
+      redos.push(snapshot());
+      applySnapshot(prev);
+      emit();
+    },
+
+    redo(): void {
+      const next = redos.pop();
+      if (!next) {
+        return;
+      }
+      dragging = false;
+      history.push(snapshot());
+      applySnapshot(next);
       emit();
     },
   };
