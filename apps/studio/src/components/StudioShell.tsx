@@ -142,13 +142,23 @@ export function StudioShell() {
               onLoadTemplate={loadTemplate}
             />
             <main className="relative min-w-0 flex-1">
-              <CanvasProvider onEdgeError={showError} skipAnimations={skipAnimations} />
+              <CanvasProvider
+                onEdgeError={showError}
+                skipAnimations={skipAnimations}
+                runPaused={false}
+                onPossessNode={() => {}}
+              />
             </main>
             <Inspector />
           </>
         ) : mode === "run" ? (
           <main className="relative min-w-0 flex-1">
-            <CanvasProvider onEdgeError={showError} skipAnimations={skipAnimations} />
+            <CanvasProvider
+              onEdgeError={showError}
+              skipAnimations={skipAnimations}
+              runPaused={false}
+              onPossessNode={() => {}}
+            />
           </main>
         ) : null}
 
