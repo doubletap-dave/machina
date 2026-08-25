@@ -1,5 +1,6 @@
 import type {
   AgentAction,
+  GodView,
   InstrumentMsg,
   KindManifest,
   MachinaError,
@@ -133,6 +134,11 @@ export class MachinaClient {
     runId: string,
   ): Promise<{ id: string; turn: number; cost: number; errors: unknown[] }> {
     const response = await fetch(`${this.#baseUrl}/runs/${runId}`);
+    return this.#readOk(response);
+  }
+
+  async getTruth(runId: string): Promise<GodView> {
+    const response = await fetch(`${this.#baseUrl}/runs/${runId}/truth`);
     return this.#readOk(response);
   }
 

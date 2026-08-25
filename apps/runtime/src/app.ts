@@ -197,6 +197,16 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
         return;
       }
 
+      if (method === "GET" && parsed.action === "truth") {
+        const view = run.engineRun.getGodView();
+        if (view === null) {
+          sendJson(res, 403, { message: "God stance sees truth." });
+          return;
+        }
+        sendJson(res, 200, view);
+        return;
+      }
+
       if (method !== "POST") {
         sendJson(res, 405, { message: "Method not allowed." });
         return;

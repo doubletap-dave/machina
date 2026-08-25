@@ -3,6 +3,7 @@ export {
   openEngineFromProject,
 } from "./engine.ts";
 export type { CompileOutcome, EngineRun, MachinaEngine, OpenEngineOpts } from "./engine.ts";
+export type { GodView } from "@machina/core";
 export {
   apiKeyFromEnv,
   credentialsPath,

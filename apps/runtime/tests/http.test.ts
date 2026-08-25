@@ -202,6 +202,35 @@ describe("HTTP control plane", () => {
     });
   });
 
+  it("GET truth is 403 until stance is god", async () => {
+    await withServer(engineDeps(), async (base) => {
+      const create = await fetch(`${base}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ project, seed: 1 }),
+      });
+      expect(create.status).toBe(200);
+      const { id } = (await create.json()) as { id: string };
+
+      const forbidden = await fetch(`${base}/runs/${id}/truth`);
+      expect(forbidden.status).toBe(403);
+      expect((await forbidden.json()).message).toBe("God stance sees truth.");
+
+      const stance = await fetch(`${base}/runs/${id}/stance`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ mode: "god" }),
+      });
+      expect(stance.status).toBe(200);
+
+      const allowed = await fetch(`${base}/runs/${id}/truth`);
+      expect(allowed.status).toBe(200);
+      const view = (await allowed.json()) as { turn: number; actors: unknown };
+      expect(view.turn).toBe(0);
+      expect(view.actors).toEqual({});
+    });
+  });
+
   it("accepts a possess action and finishes the turn", async () => {
     const world = await loadProject(exampleDir);
     await withServer(engineDeps(), async (base) => {

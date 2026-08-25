@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type {
   AgentAction,
+  GodView,
   InstrumentMsg,
   KindManifest,
   MachinaError,
@@ -50,6 +51,7 @@ export type EngineRun = {
   viewAs(actorId: string): ObservationPacket;
   subscribe(listener: (msg: InstrumentMsg) => void): () => void;
   getSummary(): { id: string; turn: number; cost: number; errors: MachinaError[] };
+  getGodView(): GodView | null;
 };
 
 export type MachinaEngine = {
@@ -231,6 +233,13 @@ function createRun(
     },
     getSummary() {
       return { id, turn: kernel.getTruth().turn, cost, errors: [...errors] };
+    },
+    getGodView() {
+      if (stance.mode !== "god") {
+        return null;
+      }
+      const truth = kernel.getTruth();
+      return { turn: truth.turn, actors: truth.actors };
     },
   };
 }

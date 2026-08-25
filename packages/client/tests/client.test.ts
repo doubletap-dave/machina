@@ -140,6 +140,17 @@ describe("MachinaClient", () => {
     });
   });
 
+  it("getTruth is 403 until stance is god", async () => {
+    await withServer(async (client) => {
+      const { id } = await client.startRun({ project, seed: 1 });
+      await expect(client.getTruth(id)).rejects.toThrow("God stance sees truth.");
+      await client.setStance(id, "god");
+      const view = await client.getTruth(id);
+      expect(view.turn).toBe(0);
+      expect(view.actors).toEqual({});
+    });
+  });
+
   it("subscribe receives turn", async () => {
     await withServer(async (client) => {
       const seen: InstrumentMsg[] = [];
