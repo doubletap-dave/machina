@@ -1,7 +1,16 @@
-import { resolve } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { randomBytes } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import type { InstrumentMsg } from "@machina/core";
-import { loadProject } from "@machina/persistence";
+import {
+  kindNoRuntimeCopy,
+  kindUnpinnedFileCopy,
+  type KindManifest,
+  type MachinaProject,
+  type InstrumentMsg,
+} from "@machina/core";
+import { loadProject, saveProject } from "@machina/persistence";
 import { emptyCredentials } from "../src/credentials.ts";
 import { openEngine, openEngineFromProject } from "../src/engine.ts";
 import * as listModels from "../src/list-models.ts";
@@ -177,5 +186,161 @@ describe("injected think", () => {
     const { turn } = await run.step();
     expect(turn).toBe(1);
     expect(invokeChat).toHaveBeenCalled();
+  });
+});
+
+const fooKind: KindManifest = {
+  schemaVersion: 1,
+  id: "custom.foo",
+  version: 1,
+  name: "Foo",
+  category: "Systems",
+  cardColor: "#112233",
+  ports: {
+    tick: {
+      name: "tick",
+      dir: "in",
+      type: "CLOCK",
+      cardinality: "exclusive",
+      label: "when time moves",
+    },
+  },
+  fields: [],
+};
+
+function clockNode() {
+  return {
+    id: "clock",
+    kind: "control.clock",
+    version: 1,
+    position: { x: 0, y: 0 },
+    config: { period: "month" },
+  };
+}
+
+function customFooProject(): MachinaProject {
+  return {
+    schemaVersion: 1,
+    id: "foo-world",
+    name: "Foo",
+    entryGraphId: "g",
+    presetRefs: [],
+    graphs: [
+      {
+        id: "g",
+        nodes: [
+          clockNode(),
+          {
+            id: "foo",
+            kind: "custom.foo",
+            version: 1,
+            position: { x: 0, y: 0 },
+            config: {},
+          },
+        ],
+        edges: [
+          {
+            id: "e-clock-foo",
+            sourceNode: "clock",
+            sourcePort: "tick",
+            targetNode: "foo",
+            targetPort: "tick",
+          },
+        ],
+      },
+    ],
+  };
+}
+
+function starterClockWorldLogger(): MachinaProject {
+  return {
+    schemaVersion: 1,
+    id: "starter",
+    name: "Starter",
+    entryGraphId: "entry",
+    presetRefs: [],
+    graphs: [
+      {
+        id: "entry",
+        nodes: [
+          clockNode(),
+          {
+            id: "world",
+            kind: "entities.world",
+            version: 1,
+            position: { x: 0, y: 0 },
+            config: {},
+          },
+          {
+            id: "logger",
+            kind: "analysis.logger",
+            version: 1,
+            position: { x: 0, y: 0 },
+            config: {},
+          },
+        ],
+        edges: [
+          {
+            id: "clock-world",
+            sourceNode: "clock",
+            sourcePort: "tick",
+            targetNode: "world",
+            targetPort: "tick",
+          },
+        ],
+      },
+    ],
+  };
+}
+
+describe("authoring kinds", () => {
+  it("compiles custom.foo when CLOCK-in is wired from clock", () => {
+    const engine = openEngineFromProject(customFooProject(), {
+      kinds: [fooKind],
+      think: waitThink,
+    });
+    const compiled = engine.compile();
+    expect(compiled.ok).toBe(true);
+  });
+
+  it("refuses start when custom.foo has no runtime", async () => {
+    const engine = openEngineFromProject(customFooProject(), {
+      kinds: [fooKind],
+      think: waitThink,
+    });
+    await expect(engine.start({ seed: 1 })).rejects.toThrow(
+      kindNoRuntimeCopy("Foo", "custom.foo"),
+    );
+  });
+
+  it("starts starter clock+world+logger with injected think", async () => {
+    const engine = openEngineFromProject(starterClockWorldLogger(), {
+      think: waitThink,
+    });
+    const run = await engine.start({ seed: 1 });
+    const { turn } = await run.step();
+    expect(turn).toBe(1);
+  });
+
+  it("surfaces verifyProjectKinds errors from compile", async () => {
+    const dir = join(
+      tmpdir(),
+      `machina-engine-kinds-${randomBytes(8).toString("hex")}`,
+    );
+    await saveProject(dir, starterClockWorldLogger());
+    await mkdir(join(dir, "kinds"), { recursive: true });
+    await writeFile(
+      join(dir, "kinds", "custom.foo.json"),
+      JSON.stringify(fooKind),
+    );
+    const engine = await openEngine(dir, { think: waitThink });
+    const compiled = engine.compile();
+    expect(compiled.ok).toBe(false);
+    if (!compiled.ok) {
+      expect(compiled.errors).toContainEqual({
+        code: "KIND_UNPINNED_FILE",
+        message: kindUnpinnedFileCopy(),
+      });
+    }
   });
 });

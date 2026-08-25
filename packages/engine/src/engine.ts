@@ -1,14 +1,23 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import type {
   AgentAction,
   InstrumentMsg,
+  KindManifest,
   MachinaError,
   MachinaProject,
   ObservationPacket,
   SimulationPlan,
 } from "@machina/core";
+import { kindNoRuntimeCopy } from "@machina/core";
 import { compile } from "@machina/graph";
-import { createRegistry } from "@machina/node-sdk";
-import { loadProject } from "@machina/persistence";
+import { createRegistry, kindManifestToDefinition } from "@machina/node-sdk";
+import {
+  loadKindManifests,
+  loadProject,
+  verifyProjectKinds,
+  type ProjectMeta,
+} from "@machina/persistence";
 import { registerCoreKinds } from "@machina/plugin-core";
 import { createKernelFromPlan, type ThinkFn } from "@machina/simulation";
 import {
@@ -57,18 +66,64 @@ export type OpenEngineOpts = {
   credentials?: CredentialsFile;
   invokeChat?: InvokeChat;
   homedir?: string;
+  kinds?: KindManifest[];
 };
 
 type Stance = { mode: "watch" | "god" | "possess"; nodeId?: string };
 
-function compileProject(project: MachinaProject): CompileOutcome {
+function registryWithKinds(kinds: KindManifest[] = []) {
   const registry = createRegistry();
   registerCoreKinds(registry);
-  const result = compile(project, registry);
-  if ("errors" in result) {
-    return { ok: false, errors: result.errors };
+  for (const kind of kinds) {
+    registry.register(kindManifestToDefinition(kind));
+  }
+  return registry;
+}
+
+function compileProject(
+  project: MachinaProject,
+  kinds: KindManifest[] = [],
+  kindErrors: MachinaError[] = [],
+): CompileOutcome {
+  const result = compile(project, registryWithKinds(kinds));
+  const errors = [
+    ...kindErrors,
+    ...("errors" in result ? result.errors : []),
+  ];
+  if (errors.length > 0) {
+    return { ok: false, errors };
   }
   return { ok: true, plan: result.plan };
+}
+
+function refuseMissingRuntime(
+  project: MachinaProject,
+  kinds: KindManifest[],
+): void {
+  const registry = registryWithKinds(kinds);
+  const missing = new Map<string, { name: string; id: string }>();
+  for (const graph of project.graphs) {
+    for (const node of graph.nodes) {
+      const def = registry.get(node.kind, node.version);
+      if (def && def.runtime === undefined) {
+        missing.set(def.type, { name: def.metadata.name, id: def.type });
+      }
+    }
+  }
+  const ordered = [...missing.values()].sort((a, b) => a.id.localeCompare(b.id));
+  if (ordered.length > 0) {
+    throw new Error(
+      ordered.map((kind) => kindNoRuntimeCopy(kind.name, kind.id)).join(" "),
+    );
+  }
+}
+
+async function loadKindPins(
+  dir: string,
+): Promise<NonNullable<ProjectMeta["kindPins"]>> {
+  const raw = await readFile(join(dir, "machina.json"), "utf-8");
+  const meta = JSON.parse(raw) as ProjectMeta;
+  return meta.kindPins ?? [];
 }
 
 function createRun(
@@ -180,19 +235,22 @@ function createRun(
   };
 }
 
-export function openEngineFromProject(
+function createEngine(
   project: MachinaProject,
   opts?: OpenEngineOpts,
+  kindErrors: MachinaError[] = [],
 ): MachinaEngine {
+  const kinds = opts?.kinds ?? [];
   return {
     compile() {
-      return compileProject(project);
+      return compileProject(project, kinds, kindErrors);
     },
     async start(startOpts) {
-      const compiled = compileProject(project);
+      const compiled = compileProject(project, kinds, kindErrors);
       if (!compiled.ok) {
         throw new Error(compiled.errors.map((error) => error.message).join(" "));
       }
+      refuseMissingRuntime(project, kinds);
       const think = opts?.think ?? createLlmThink({
         invokeChat: opts?.invokeChat,
         credentials:
@@ -205,10 +263,19 @@ export function openEngineFromProject(
   };
 }
 
+export function openEngineFromProject(
+  project: MachinaProject,
+  opts?: OpenEngineOpts,
+): MachinaEngine {
+  return createEngine(project, opts);
+}
+
 export async function openEngine(
   dir: string,
   opts?: OpenEngineOpts,
 ): Promise<MachinaEngine> {
   const project = await loadProject(dir);
-  return openEngineFromProject(project, opts);
+  const kinds = await loadKindManifests(dir);
+  const kindErrors = await verifyProjectKinds(dir, await loadKindPins(dir));
+  return createEngine(project, { ...opts, kinds }, kindErrors);
 }
