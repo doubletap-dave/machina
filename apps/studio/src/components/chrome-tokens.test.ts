@@ -15,6 +15,7 @@ const CHROME_FILES = [
   "components/RunPanel.tsx",
   "components/StudioShell.tsx",
   "components/studio-chrome.tsx",
+  "kinds/KindAuthorForm.tsx",
   "run/StanceBar.tsx",
 ] as const;
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { KindField, KindFieldType, KindManifest, PortDef } from "@machina/core";
 import { useProjectSnapshot } from "@/lib/project-store-context";
+import { chromeField, chromeGhost, chromeMuted, chromePanel, chromeText } from "@/components/studio-chrome";
 import { KIND_CATEGORIES, PORT_TYPES } from "./validate-kind.ts";
 
 export type KindLibraryCallbacks = {
@@ -167,13 +168,16 @@ export function KindAuthorForm({ library }: { library?: KindLibraryCallbacks }) 
 
   return (
     <form
-      className="space-y-3 text-sm text-neutral-200"
+      className="space-y-3 text-sm"
+      style={chromeText}
       onSubmit={(event) => {
         event.preventDefault();
         void handleSave();
       }}
     >
-      <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">New kind</h2>
+      <h2 className="text-xs font-semibold uppercase tracking-wide" style={chromeMuted}>
+        New kind
+      </h2>
       {banner ? (
         <div className="space-y-2 rounded border border-amber-800 bg-amber-950/40 p-2 text-xs text-amber-100">
           <p>{banner}</p>
@@ -186,26 +190,29 @@ export function KindAuthorForm({ library }: { library?: KindLibraryCallbacks }) 
           </button>
         </div>
       ) : null}
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs" style={chromeMuted}>
         Id
         <input
-          className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+          className="mt-1 w-full rounded border px-2 py-1 text-sm"
+          style={chromeField}
           value={id}
           onChange={(event) => setId(event.target.value)}
         />
       </label>
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs" style={chromeMuted}>
         Name
         <input
-          className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+          className="mt-1 w-full rounded border px-2 py-1 text-sm"
+          style={chromeField}
           value={name}
           onChange={(event) => setName(event.target.value)}
         />
       </label>
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs" style={chromeMuted}>
         Category
         <select
-          className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+          className="mt-1 w-full rounded border px-2 py-1 text-sm"
+          style={chromeField}
           value={category}
           onChange={(event) => setCategory(event.target.value as KindManifest["category"])}
         >
@@ -216,10 +223,11 @@ export function KindAuthorForm({ library }: { library?: KindLibraryCallbacks }) 
           ))}
         </select>
       </label>
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs" style={chromeMuted}>
         Card color
         <input
-          className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+          className="mt-1 w-full rounded border px-2 py-1 text-sm"
+          style={chromeField}
           value={cardColor}
           onChange={(event) => setCardColor(event.target.value)}
         />
@@ -230,13 +238,15 @@ export function KindAuthorForm({ library }: { library?: KindLibraryCallbacks }) 
       <div className="flex gap-2">
         <button
           type="submit"
-          className="flex-1 rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800"
+          className="machina-hover flex-1 rounded border px-2 py-1 text-xs"
+          style={chromeGhost}
         >
           Save
         </button>
         <button
           type="button"
-          className="flex-1 rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800"
+          className="machina-hover flex-1 rounded border px-2 py-1 text-xs"
+          style={chromeGhost}
           onClick={() => void handlePublish()}
         >
           Publish
@@ -256,21 +266,25 @@ function PortList({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-neutral-400">Ports</span>
+        <span className="text-xs" style={chromeMuted}>
+          Ports
+        </span>
         <button
           type="button"
-          className="text-xs text-neutral-300"
+          className="machina-hover rounded px-1 text-xs"
+          style={chromeText}
           onClick={() => setPorts((current) => [...current, emptyPort()])}
         >
           Add port
         </button>
       </div>
       {ports.map((port, index) => (
-        <div key={index} className="space-y-1 rounded border border-neutral-800 p-2">
+        <div key={index} className="space-y-1 rounded border p-2" style={chromePanel}>
           <input
             aria-label={`Port ${index + 1} name`}
             placeholder="name"
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+            className="w-full rounded border px-2 py-1 text-xs"
+            style={chromeField}
             value={port.name}
             onChange={(event) =>
               setPorts((current) =>
@@ -280,7 +294,8 @@ function PortList({
           />
           <select
             aria-label={`Port ${index + 1} dir`}
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+            className="w-full rounded border px-2 py-1 text-xs"
+            style={chromeField}
             value={port.dir}
             onChange={(event) =>
               setPorts((current) =>
@@ -295,7 +310,8 @@ function PortList({
           </select>
           <select
             aria-label={`Port ${index + 1} type`}
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+            className="w-full rounded border px-2 py-1 text-xs"
+            style={chromeField}
             value={port.type}
             onChange={(event) =>
               setPorts((current) =>
@@ -313,7 +329,8 @@ function PortList({
           </select>
           <select
             aria-label={`Port ${index + 1} cardinality`}
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+            className="w-full rounded border px-2 py-1 text-xs"
+            style={chromeField}
             value={port.cardinality}
             onChange={(event) =>
               setPorts((current) =>
@@ -332,7 +349,8 @@ function PortList({
           <input
             aria-label={`Port ${index + 1} label`}
             placeholder="label"
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+            className="w-full rounded border px-2 py-1 text-xs"
+            style={chromeField}
             value={port.label}
             onChange={(event) =>
               setPorts((current) =>
@@ -356,21 +374,25 @@ function FieldList({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-neutral-400">Inspector fields</span>
+        <span className="text-xs" style={chromeMuted}>
+          Inspector fields
+        </span>
         <button
           type="button"
-          className="text-xs text-neutral-300"
+          className="machina-hover rounded px-1 text-xs"
+          style={chromeText}
           onClick={() => setFields((current) => [...current, emptyField()])}
         >
           Add field
         </button>
       </div>
       {fields.map((field, index) => (
-        <div key={index} className="space-y-1 rounded border border-neutral-800 p-2">
+        <div key={index} className="space-y-1 rounded border p-2" style={chromePanel}>
           <input
             aria-label={`Field ${index + 1} key`}
             placeholder="key"
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+            className="w-full rounded border px-2 py-1 text-xs"
+            style={chromeField}
             value={field.key}
             onChange={(event) =>
               setFields((current) =>
@@ -381,7 +403,8 @@ function FieldList({
           <input
             aria-label={`Field ${index + 1} label`}
             placeholder="label"
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+            className="w-full rounded border px-2 py-1 text-xs"
+            style={chromeField}
             value={field.label}
             onChange={(event) =>
               setFields((current) =>
@@ -391,7 +414,8 @@ function FieldList({
           />
           <select
             aria-label={`Field ${index + 1} type`}
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+            className="w-full rounded border px-2 py-1 text-xs"
+            style={chromeField}
             value={field.type}
             onChange={(event) =>
               setFields((current) =>
@@ -409,7 +433,8 @@ function FieldList({
           <input
             aria-label={`Field ${index + 1} default`}
             placeholder="default"
-            className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+            className="w-full rounded border px-2 py-1 text-xs"
+            style={chromeField}
             value={field.defaultText}
             onChange={(event) =>
               setFields((current) =>
@@ -423,7 +448,8 @@ function FieldList({
             <input
               aria-label={`Field ${index + 1} options`}
               placeholder="options, comma separated"
-              className="w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-xs"
+              className="w-full rounded border px-2 py-1 text-xs"
+              style={chromeField}
               value={field.optionsText}
               onChange={(event) =>
                 setFields((current) =>
