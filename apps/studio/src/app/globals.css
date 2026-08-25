@@ -4,4 +4,27 @@ html,
 body {
   height: 100%;
   margin: 0;
+  font-family: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+}
+
+@keyframes machina-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.edge-pulse {
+  animation: machina-pulse var(--machina-anim-ms, 180ms) ease-in-out;
+}
+
+.skip-animations .edge-pulse {
+  animation: none;
 }

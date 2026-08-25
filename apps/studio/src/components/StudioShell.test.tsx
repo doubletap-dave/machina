@@ -1,9 +1,30 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStudioRegistry } from "@/lib/create-studio-registry";
 import { ProjectStoreProvider } from "@/lib/project-store-context";
 import { Library } from "./Library";
+import { StudioShell } from "./StudioShell";
+
+vi.mock("./Canvas", () => ({
+  CanvasProvider: () => null,
+  findNodeById: () => undefined,
+}));
+
+vi.mock("@/lib/machina-client", () => ({
+  getStudioClient: () => ({
+    compile: vi.fn(),
+    startRun: vi.fn(),
+    step: vi.fn(),
+    pause: vi.fn(),
+    rewind: vi.fn(),
+    setStance: vi.fn(),
+    submitAction: vi.fn(),
+    getRun: vi.fn(),
+    loadExampleWorld: vi.fn(),
+    subscribe: () => () => {},
+  }),
+}));
 
 describe("StudioShell library", () => {
   it("shows human names and adds a node when clicked", async () => {
@@ -28,5 +49,36 @@ describe("StudioShell library", () => {
 
     await user.click(screen.getByRole("button", { name: "Personality" }));
     expect(addedKind).toBe("cognition.personality");
+  });
+});
+
+function renderShell() {
+  return render(
+    <ProjectStoreProvider registry={createStudioRegistry()}>
+      <StudioShell />
+    </ProjectStoreProvider>,
+  );
+}
+
+describe("StudioShell chrome", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("uses sentence-case Build Run Analyze", () => {
+    renderShell();
+    expect(screen.getByRole("button", { name: "Build" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Run$/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Analyze" })).toBeInTheDocument();
+  });
+
+  it("shows a status bar with skip animations", () => {
+    renderShell();
+    const bar = screen.getByRole("contentinfo");
+    expect(within(bar).getByText("Turn 0")).toBeInTheDocument();
+    expect(within(bar).getByText("Events 0")).toBeInTheDocument();
+    expect(within(bar).getByText("Cost $0")).toBeInTheDocument();
+    expect(within(bar).getByText("Errors 0")).toBeInTheDocument();
+    expect(within(bar).getByRole("checkbox", { name: "Skip animations" })).toBeInTheDocument();
   });
 });

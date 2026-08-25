@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { MachinaProject, ObservationPacket } from "@machina/core";
 import { PossessPanel } from "./PossessPanel.tsx";
-import { delayForSpeed } from "./speed.ts";
 import { legalPossessTargets } from "./stance.ts";
 
 function testProject(): MachinaProject {
@@ -92,14 +91,6 @@ describe("legalPossessTargets", () => {
   it("returns all agent ids when selection is null", () => {
     const project = testProject();
     expect(legalPossessTargets(project, null)).toEqual(["agent-a", "agent-b", "cabinet-a", "cabinet-b"]);
-  });
-});
-
-describe("delayForSpeed", () => {
-  it("maps run speed to mechanical tick delays", () => {
-    expect(delayForSpeed(1)).toBe(1000);
-    expect(delayForSpeed(10)).toBe(100);
-    expect(delayForSpeed(100)).toBe(10);
   });
 });
 

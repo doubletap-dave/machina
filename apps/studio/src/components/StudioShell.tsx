@@ -1,6 +1,6 @@
 "use client";
 
-import { accent, canvasBg, font } from "@machina/ui";
+import { accent, canvasBg, font, fontMono } from "@machina/ui";
 import type { Preset } from "@machina/plugin-core";
 import { useCallback, useState } from "react";
 import { useProjectSnapshot } from "@/lib/project-store-context";
@@ -15,11 +15,22 @@ import { RunPanel } from "./RunPanel";
 
 type StudioMode = "build" | "run" | "analyze";
 
+const MODE_LABEL: Record<StudioMode, string> = {
+  build: "Build",
+  run: "Run",
+  analyze: "Analyze",
+};
+
 export function StudioShell() {
   const store = useProjectSnapshot();
   const [mode, setMode] = useState<StudioMode>("build");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [skipAnimations, setSkipAnimations] = useState(false);
+  const turn = 0;
+  const events = 0;
+  const cost = 0;
+  const errors = 0;
   const graph = store.getCurrentGraph();
   const inSubgraph = Boolean(graph.parentGraphId);
   const project = store.getProject();
@@ -105,7 +116,7 @@ export function StudioShell() {
               }
               onClick={() => setMode(tab)}
             >
-              {tab.toUpperCase()}
+              {MODE_LABEL[tab]}
             </button>
           ))}
           {mode === "build" ? (
@@ -131,13 +142,13 @@ export function StudioShell() {
               onLoadTemplate={loadTemplate}
             />
             <main className="relative min-w-0 flex-1">
-              <CanvasProvider onEdgeError={showError} />
+              <CanvasProvider onEdgeError={showError} skipAnimations={skipAnimations} />
             </main>
             <Inspector />
           </>
         ) : mode === "run" ? (
           <main className="relative min-w-0 flex-1">
-            <CanvasProvider onEdgeError={showError} />
+            <CanvasProvider onEdgeError={showError} skipAnimations={skipAnimations} />
           </main>
         ) : null}
 
@@ -154,6 +165,21 @@ export function StudioShell() {
         </aside>
       </div>
 
+      <footer className="flex items-center gap-6 border-t border-neutral-800 px-4 py-1.5 text-xs text-neutral-400" style={{ fontFamily: fontMono }}>
+        <span>Turn {turn}</span>
+        <span>Events {events}</span>
+        <span>Cost ${cost}</span>
+        <span>Errors {errors}</span>
+        <label className="ml-auto flex items-center gap-2 text-neutral-300">
+          <input
+            type="checkbox"
+            checked={skipAnimations}
+            onChange={(event) => setSkipAnimations(event.target.checked)}
+          />
+          Skip animations
+        </label>
+      </footer>
+
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
@@ -162,7 +188,7 @@ export function StudioShell() {
 
       {toast ? (
         <div
-          className={`pointer-events-none fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded px-4 py-2 text-sm shadow-lg ${
+          className={`pointer-events-none fixed bottom-12 left-1/2 z-50 -translate-x-1/2 rounded px-4 py-2 text-sm shadow-lg ${
             toast.includes("compiles") ||
             toast.includes("materialized") ||
             toast.includes("loaded")

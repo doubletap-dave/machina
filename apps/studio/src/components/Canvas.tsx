@@ -1,6 +1,6 @@
 "use client";
 
-import { canvasBg } from "@machina/ui";
+import { animationDelayMs, canvasBg } from "@machina/ui";
 import {
   Background,
   Controls,
@@ -25,9 +25,10 @@ const nodeTypes: NodeTypes = { machina: MachinaFlowNode };
 
 type CanvasProps = {
   onEdgeError: (message: string) => void;
+  skipAnimations?: boolean;
 };
 
-export function Canvas({ onEdgeError }: CanvasProps) {
+export function Canvas({ onEdgeError, skipAnimations = false }: CanvasProps) {
   const store = useProjectSnapshot();
   const registry = useRegistry();
   const graph = store.getCurrentGraph();
@@ -129,7 +130,13 @@ export function Canvas({ onEdgeError }: CanvasProps) {
   );
 
   return (
-    <div className="h-full w-full" style={{ background: canvasBg }}>
+    <div
+      className={skipAnimations ? "skip-animations h-full w-full" : "h-full w-full"}
+      style={{
+        background: canvasBg,
+        ["--machina-anim-ms" as string]: `${animationDelayMs(skipAnimations)}ms`,
+      }}
+    >
       <ReactFlow
         nodes={flowNodes}
         edges={flowEdges}
@@ -149,10 +156,10 @@ export function Canvas({ onEdgeError }: CanvasProps) {
   );
 }
 
-export function CanvasProvider({ onEdgeError }: CanvasProps) {
+export function CanvasProvider({ onEdgeError, skipAnimations = false }: CanvasProps) {
   return (
     <ReactFlowProvider>
-      <Canvas onEdgeError={onEdgeError} />
+      <Canvas onEdgeError={onEdgeError} skipAnimations={skipAnimations} />
     </ReactFlowProvider>
   );
 }

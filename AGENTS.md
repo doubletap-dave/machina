@@ -117,7 +117,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/plugin-core`:** `registerCoreKinds`, 14 kinds v1, `nationPreset`, `cabinetPreset`, `agencyPreset`, `listBuiltinPresets`, `Preset`
 
-**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`
+**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`, `fontMono`, `animationDelayMs`
 
 **`@machina/simulation`:** `createRng`, `createKernel`, `createKernelFromPlan`, `actorIdsFromPlan`, `Kernel`, `ThinkFn`, `InstrumentMsg` — **`TrueWorldState` is internal only**
 
