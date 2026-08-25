@@ -29,4 +29,14 @@ describe("InstrumentMsg", () => {
     };
     expect(msg.type).toBe("error");
   });
+
+  it("accepts a logger line", () => {
+    const msg: InstrumentMsg = {
+      type: "log",
+      record: "action",
+      turn: 1,
+      payload: { type: "wait" },
+    };
+    expect(msg.type).toBe("log");
+  });
 });

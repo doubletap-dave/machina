@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SimulationPlan } from "@machina/core";
+import { emptyAgentPacket, type SimulationPlan } from "@machina/core";
 import { actorIdsFromPlan, createKernelFromPlan } from "../src/index.ts";
 
 const plan: SimulationPlan = {
@@ -7,8 +7,20 @@ const plan: SimulationPlan = {
   clock: { nodeId: "clock", config: {} },
   systems: [],
   agents: [
-    { nodeId: "agent-a", actorRef: "a", graphRef: "g1", packetWires: [] },
-    { nodeId: "agent-b", actorRef: "b", graphRef: "g1", packetWires: [] },
+    {
+      nodeId: "agent-a",
+      actorRef: "a",
+      graphRef: "g1",
+      packetWires: [],
+      packet: emptyAgentPacket(),
+    },
+    {
+      nodeId: "agent-b",
+      actorRef: "b",
+      graphRef: "g1",
+      packetWires: [],
+      packet: emptyAgentPacket(),
+    },
   ],
   perception: [],
   analysis: [],

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  actorNeedsNameCopy,
+  goalHasNoStatementCopy,
   kindIdReservedCopy,
   kindNoRuntimeCopy,
   kindPinMismatchCopy,
@@ -21,9 +23,7 @@ describe("kind-english", () => {
   });
 
   it("returns frozen unpinned-file copy", () => {
-    expect(kindUnpinnedFileCopy()).toBe(
-      "This folder has a kind file that is not pinned.",
-    );
+    expect(kindUnpinnedFileCopy()).toBe("This folder has a kind file that is not pinned.");
   });
 
   it("returns frozen pin-missing-file copy", () => {
@@ -34,5 +34,14 @@ describe("kind-english", () => {
 
   it("returns frozen reserved-id copy", () => {
     expect(kindIdReservedCopy()).toBe("That id is reserved by a built-in kind.");
+  });
+});
+
+describe("kind config copy", () => {
+  it("names a missing actor", () => {
+    expect(actorNeedsNameCopy()).toBe("This actor needs a name.");
+  });
+  it("names a missing goal", () => {
+    expect(goalHasNoStatementCopy()).toBe("This goal has no statement.");
   });
 });

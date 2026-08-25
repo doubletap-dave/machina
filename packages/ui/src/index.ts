@@ -9,6 +9,8 @@ export {
   kindUnpinnedFileCopy,
   kindPinMissingFileCopy,
   kindIdReservedCopy,
+  actorNeedsNameCopy,
+  goalHasNoStatementCopy,
 } from "./english.ts";
 export { canvasBg, accent, font, fontMono, animationDelayMs } from "./tokens.ts";
 export {

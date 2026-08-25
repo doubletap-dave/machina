@@ -17,3 +17,11 @@ export function kindPinMissingFileCopy(): string {
 export function kindIdReservedCopy(): string {
   return "That id is reserved by a built-in kind.";
 }
+
+export function actorNeedsNameCopy(): string {
+  return "This actor needs a name.";
+}
+
+export function goalHasNoStatementCopy(): string {
+  return "This goal has no statement.";
+}

@@ -5,4 +5,5 @@ export type InstrumentMsg =
   | { type: "node-active"; nodeId: string }
   | { type: "edge-pulse"; from: string; to: string; portType: string }
   | { type: "possess-wait"; nodeId: string; packet: ObservationPacket }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "log"; record: "event" | "action"; turn: number; payload: unknown };

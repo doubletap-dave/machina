@@ -10,7 +10,9 @@ export type {
   Wire,
 } from "./ir.ts";
 export { stripPositions } from "./ir.ts";
-export type { SimulationPlan } from "./plan.ts";
+export type { SimulationPlan, AgentPacket } from "./plan.ts";
+export { emptyAgentPacket } from "./plan.ts";
+export type { GodView } from "./god-view.ts";
 export type { ObservationPacket, AgentAction } from "./packets.ts";
 export type { MachinaEvent } from "./events.ts";
 export type { InstrumentMsg } from "./instrument.ts";
@@ -22,6 +24,8 @@ export {
   kindUnpinnedFileCopy,
   kindPinMissingFileCopy,
   kindIdReservedCopy,
+  actorNeedsNameCopy,
+  goalHasNoStatementCopy,
 } from "./kind-english.ts";
 export {
   keyRefusedCopy,

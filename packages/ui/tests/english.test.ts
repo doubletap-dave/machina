@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  actorNeedsNameCopy,
+  goalHasNoStatementCopy,
   kindIdReservedCopy,
   kindNoRuntimeCopy,
   kindPinMismatchCopy,
@@ -35,5 +37,7 @@ describe("kind english re-exports", () => {
     expect(kindPinMissingFileCopy()).toBe(
       "This project pins a kind that is missing from the folder.",
     );
+    expect(actorNeedsNameCopy()).toBe("This actor needs a name.");
+    expect(goalHasNoStatementCopy()).toBe("This goal has no statement.");
   });
 });

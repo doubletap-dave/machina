@@ -1,4 +1,4 @@
-import type { SimulationPlan, Wire } from "@machina/core";
+import { emptyAgentPacket, type SimulationPlan, type Wire } from "@machina/core";
 import type { NodeDefinition, NodeRegistry } from "@machina/node-sdk";
 import type { FlatGraph } from "./flatten.ts";
 import type { MachinaNode } from "@machina/core";
@@ -78,10 +78,16 @@ export function buildSimulationPlan(
           actorRef: actorRefFor(node.id),
           graphRef: `agent:${node.id}`,
           packetWires: packetWires(node.id),
+          packet: emptyAgentPacket(),
         });
         break;
       case "analysis":
-        plan.analysis.push({ nodeId: node.id, kind: node.kind });
+        plan.analysis.push({
+          nodeId: node.id,
+          kind: node.kind,
+          config: {},
+          wires: [],
+        });
         break;
     }
   }

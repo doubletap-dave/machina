@@ -27,4 +27,6 @@ export {
   kindUnpinnedFileCopy,
   kindPinMissingFileCopy,
   kindIdReservedCopy,
+  actorNeedsNameCopy,
+  goalHasNoStatementCopy,
 } from "@machina/core";
