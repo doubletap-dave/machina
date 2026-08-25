@@ -53,7 +53,7 @@ describe("isValidMachinaConnection", () => {
     ).toBe(true);
   });
 
-  it("rejects null source, target, or handles", () => {
+  it("allows an in-progress drag when the target is not chosen yet", () => {
     const registry = testRegistry();
     const nodes = [node("clock", "control.clock"), node("world", "entities.world")];
     const base = {
@@ -65,9 +65,9 @@ describe("isValidMachinaConnection", () => {
       targetHandle: "tick" as string | null,
     };
 
-    expect(isValidMachinaConnection({ ...base, source: null })).toBe(false);
-    expect(isValidMachinaConnection({ ...base, target: null })).toBe(false);
-    expect(isValidMachinaConnection({ ...base, sourceHandle: null })).toBe(false);
-    expect(isValidMachinaConnection({ ...base, targetHandle: null })).toBe(false);
+    expect(isValidMachinaConnection({ ...base, target: null })).toBe(true);
+    expect(isValidMachinaConnection({ ...base, targetHandle: null })).toBe(true);
+    expect(isValidMachinaConnection({ ...base, source: null })).toBe(true);
+    expect(isValidMachinaConnection({ ...base, sourceHandle: null })).toBe(true);
   });
 });

@@ -317,6 +317,16 @@ export function createProjectStore(registry: NodeRegistry) {
       emit();
     },
 
+    writeGraph(next: GraphDocument): void {
+      const graph = currentGraph();
+      if (!dragging) {
+        record();
+      }
+      graph.nodes = next.nodes;
+      graph.edges = next.edges;
+      emit();
+    },
+
     deleteNodes(ids: string[]): void {
       deleteSelection(ids, []);
     },

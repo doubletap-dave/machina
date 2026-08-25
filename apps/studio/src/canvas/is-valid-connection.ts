@@ -11,7 +11,7 @@ export function isValidMachinaConnection(opts: {
 }): boolean {
   const { registry, nodes, source, target, sourceHandle, targetHandle } = opts;
   if (!source || !target || !sourceHandle || !targetHandle) {
-    return false;
+    return true;
   }
 
   const sourceNode = nodes.find((node) => node.id === source);

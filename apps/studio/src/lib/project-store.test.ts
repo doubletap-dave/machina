@@ -351,6 +351,44 @@ describe("createProjectStore", () => {
     expect(clockConfig(store)).toEqual({ period: "p0" });
   });
 
+  it("writeGraph replaces current graph nodes and edges and undoes in one step", () => {
+    const store = createProjectStore(testRegistry());
+    const previous = structuredClone(store.getCurrentGraph());
+    const next = structuredClone(previous);
+    const clock = next.nodes.find((node) => node.id === "clock");
+    if (clock) {
+      clock.position = { x: 96, y: 112 };
+    }
+    next.edges = [];
+
+    store.writeGraph(next);
+
+    expect(clockPosition(store)).toEqual({ x: 96, y: 112 });
+    expect(store.getCurrentGraph().edges).toEqual([]);
+    expect(store.getCurrentGraph().id).toBe(previous.id);
+
+    store.undo();
+    expect(clockPosition(store)).toEqual({ x: 40, y: 40 });
+    expect(store.getCurrentGraph().edges).toHaveLength(previous.edges.length);
+  });
+
+  it("writeGraph during a drag does not add a second undo step", () => {
+    const store = createProjectStore(testRegistry());
+    const dragged = structuredClone(store.getCurrentGraph());
+    const clock = dragged.nodes.find((node) => node.id === "clock");
+    if (clock) {
+      clock.position = { x: 300, y: 220 };
+    }
+
+    store.beginDrag("clock");
+    store.writeGraph(dragged);
+    store.endDrag();
+
+    expect(clockPosition(store)).toEqual({ x: 300, y: 220 });
+    store.undo();
+    expect(clockPosition(store)).toEqual({ x: 40, y: 40 });
+  });
+
   it("beginDrag plus many setNodePosition plus endDrag is one undo back to start", () => {
     const store = createProjectStore(testRegistry());
     store.beginDrag("clock");

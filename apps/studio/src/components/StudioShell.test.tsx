@@ -53,6 +53,10 @@ vi.mock("@/kinds/kind-library-client", () => ({
 }));
 
 describe("StudioShell library", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it("shows human names and adds a node when clicked", async () => {
     const user = userEvent.setup();
     let addedKind = "";
@@ -90,6 +94,16 @@ describe("StudioShell library", () => {
 
     await user.click(screen.getByRole("button", { name: "Personality" }));
     expect(addedKind).toBe("cognition.personality");
+  });
+
+  it("marks kind buttons draggable for the canvas drop payload", () => {
+    render(
+      <ProjectStoreProvider registry={createStudioRegistry()}>
+        <Library onAddKind={() => {}} onInsertPreset={() => {}} onLoadTemplate={() => {}} />
+      </ProjectStoreProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: "Personality" })).toHaveAttribute("draggable", "true");
   });
 });
 

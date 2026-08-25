@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { listBuiltinPresets, type Preset } from "@machina/plugin-core";
 import { KIND_GROUP_ORDER, paletteGroup } from "@/lib/library-groups";
 import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
+import { setDragKind } from "@/canvas/dnd.ts";
 import { chromeMuted, chromeText } from "./studio-chrome";
 
 type LibraryProps = {
@@ -107,8 +108,10 @@ export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryPr
                 <li key={item.kind}>
                   <button
                     type="button"
+                    draggable
                     className="machina-hover w-full rounded px-2 py-1 text-left text-sm"
                     style={chromeText}
+                    onDragStart={(event) => setDragKind(event, item.kind)}
                     onClick={() => onAddKind(item.kind)}
                   >
                     {item.name}

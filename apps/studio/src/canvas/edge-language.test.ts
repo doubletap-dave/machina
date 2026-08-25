@@ -35,3 +35,10 @@ describe("edgeSourcePortType", () => {
     });
   });
 });
+
+describe("flowEdgeStyle unknown types", () => {
+  it("does not throw when the port type is missing", () => {
+    expect(flowEdgeStyle("")).toEqual({ stroke: "#8a8a8a", strokeWidth: 2 });
+    expect(flowEdgeStyle("not-a-port")).toEqual({ stroke: "#8a8a8a", strokeWidth: 2 });
+  });
+});

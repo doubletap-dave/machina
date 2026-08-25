@@ -1,8 +1,13 @@
 import type { MachinaNode, PortType } from "@machina/core";
 import type { NodeRegistry } from "@machina/node-sdk";
-import { portLanguage } from "@machina/ui";
+import { PORT_LANGUAGE, portLanguage } from "@machina/ui";
+
+const UNKNOWN_EDGE = { stroke: "#8a8a8a", strokeWidth: 2 };
 
 export function flowEdgeStyle(portType: string): { stroke: string; strokeWidth: number } {
+  if (!(portType in PORT_LANGUAGE)) {
+    return UNKNOWN_EDGE;
+  }
   const lang = portLanguage(portType as PortType);
   return { stroke: lang.color, strokeWidth: 2 };
 }

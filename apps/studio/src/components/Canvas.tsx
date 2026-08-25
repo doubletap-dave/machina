@@ -3,44 +3,27 @@
 import { animationDelayMs, canvasBg } from "@machina/ui";
 import {
   Background,
+  BackgroundVariant,
   Controls,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
   useNodesInitialized,
   useReactFlow,
-  type Connection,
-  type Edge,
-  type EdgeChange,
   type Node,
-  type NodeChange,
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { MachinaNode } from "@machina/core";
-import {
-  ACTIVE_PORT_ATTR,
-  activeTypeFromConnection,
-  connectionLineStyleFor,
-  endConnectHighlight,
-  startConnectHighlight,
-} from "@/canvas/connect-highlight.ts";
-import { toFlowEdges, toFlowNodes } from "@/canvas/flow-elements.ts";
-import { isValidMachinaConnection } from "@/canvas/is-valid-connection.ts";
+import { useCanvasMenu } from "@/canvas/canvas-menu.ts";
+import { ACTIVE_PORT_ATTR } from "@/canvas/connect-highlight.ts";
 import { minimapMaskColor, minimapNodeFill } from "@/canvas/minimap.ts";
-import {
-  applySelectionChanges,
-  canvasKeyAction,
-  dispatchCanvasKeyAction,
-  nodeChangeOps,
-  removedIds,
-} from "@/canvas/selection-delete.ts";
+import { canvasKeyAction, dispatchCanvasKeyAction } from "@/canvas/selection-delete.ts";
+import { useCanvasFlow } from "@/canvas/use-canvas-flow.ts";
+import { useConnectHighlight } from "@/canvas/use-connect-highlight.ts";
 import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
-import {
-  CanvasContextMenu,
-  type CanvasContextMenuTarget,
-} from "./CanvasContextMenu";
+import { CanvasContextMenu } from "./CanvasContextMenu";
 import { MachinaFlowNode } from "./MachinaFlowNode";
 
 const nodeTypes: NodeTypes = { machina: MachinaFlowNode };
@@ -50,12 +33,6 @@ type CanvasProps = {
   skipAnimations?: boolean;
   runPaused?: boolean;
   onPossessNode?: (id: string) => void;
-};
-
-type OpenMenu = {
-  target: CanvasContextMenuTarget;
-  x: number;
-  y: number;
 };
 
 function rootStyle(): CSSStyleDeclaration | undefined {
@@ -74,18 +51,17 @@ export function Canvas({
   const currentGraphId = store.getCurrentGraphId();
   const nodesInitialized = useNodesInitialized();
   const reactFlow = useReactFlow();
-  const canvasRef = useRef<HTMLDivElement>(null);
   const fitViewRef = useRef(reactFlow.fitView);
   const fittedGraphIdRef = useRef<string | null>(null);
-  const selectedNodeIdsRef = useRef(new Set<string>());
-  const selectedEdgeIdsRef = useRef(new Set<string>());
-  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
-  const [selectedEdgeIds, setSelectedEdgeIds] = useState<Set<string>>(new Set());
-  const [activePortType, setActivePortType] = useState<string | undefined>();
-  const [menu, setMenu] = useState<OpenMenu | null>(null);
+  const selectedNodeIdsRef = useRef<string[]>([]);
+  const selectedEdgeIdsRef = useRef<string[]>([]);
+  const flow = useCanvasFlow({ store, registry, onEdgeError });
+  const connect = useConnectHighlight(registry, graph.nodes);
+  const { menu, closeMenu, onPaneContextMenu, onNodeContextMenu, onEdgeContextMenu } =
+    useCanvasMenu(graph.nodes);
   fitViewRef.current = reactFlow.fitView;
-  selectedNodeIdsRef.current = selectedNodeIds;
-  selectedEdgeIdsRef.current = selectedEdgeIds;
+  selectedNodeIdsRef.current = flow.selectedNodeIds;
+  selectedEdgeIdsRef.current = flow.selectedEdgeIds;
 
   useEffect(() => {
     if (!nodesInitialized || fittedGraphIdRef.current === currentGraphId) {
@@ -96,10 +72,8 @@ export function Canvas({
   }, [currentGraphId, nodesInitialized]);
 
   useEffect(() => {
-    setSelectedNodeIds(new Set());
-    setSelectedEdgeIds(new Set());
-    setMenu(null);
-  }, [currentGraphId]);
+    closeMenu();
+  }, [closeMenu, currentGraphId]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
@@ -109,201 +83,84 @@ export function Canvas({
       }
       event.preventDefault();
       dispatchCanvasKeyAction(action, store, {
-        nodeIds: [...selectedNodeIdsRef.current],
-        edgeIds: [...selectedEdgeIdsRef.current],
+        nodeIds: selectedNodeIdsRef.current,
+        edgeIds: selectedEdgeIdsRef.current,
       });
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [store]);
 
-  const flowNodes: Node[] = useMemo(
-    () => toFlowNodes(graph.nodes, registry, selectedNodeIds),
-    [graph.nodes, registry, selectedNodeIds],
-  );
-
-  const flowEdges: Edge[] = useMemo(
-    () => toFlowEdges(graph.edges, graph.nodes, registry, selectedEdgeIds),
-    [graph.edges, graph.nodes, registry, selectedEdgeIds],
-  );
-
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      if (!connection.source || !connection.target || !connection.sourceHandle || !connection.targetHandle) {
-        return;
-      }
-      const err = store.addEdge({
-        sourceNode: connection.source,
-        sourcePort: connection.sourceHandle,
-        targetNode: connection.target,
-        targetPort: connection.targetHandle,
-      });
-      if (err) {
-        onEdgeError(err.message);
-      }
-    },
-    [onEdgeError, store],
-  );
-
-  const isValidConnection = useCallback(
-    (connection: Connection | Edge) =>
-      isValidMachinaConnection({
-        registry,
-        nodes: graph.nodes,
-        source: connection.source,
-        target: connection.target,
-        sourceHandle: connection.sourceHandle ?? null,
-        targetHandle: connection.targetHandle ?? null,
-      }),
-    [graph.nodes, registry],
-  );
-
-  const onConnectStart = useCallback(
-    (_: unknown, params: { nodeId: string | null; handleId: string | null }) => {
-      const type = activeTypeFromConnection(registry, graph.nodes, params.nodeId, params.handleId);
-      startConnectHighlight(canvasRef.current, type);
-      setActivePortType(type);
-    },
-    [graph.nodes, registry],
-  );
-
-  const onConnectEnd = useCallback(() => {
-    endConnectHighlight(canvasRef.current);
-    setActivePortType(undefined);
-  }, []);
-
-  const onNodeClick = useCallback(
-    (_: unknown, node: Node) => {
-      setMenu(null);
-      store.selectNode(node.id);
-    },
-    [store],
-  );
-
+  const onNodeClick = useCallback(() => closeMenu(), [closeMenu]);
   const onPaneClick = useCallback(() => {
-    setMenu(null);
-    store.selectNode(null);
-    setSelectedNodeIds(new Set());
-    setSelectedEdgeIds(new Set());
-  }, [store]);
-
-  const onPaneContextMenu = useCallback((event: MouseEvent) => {
-    event.preventDefault();
-    setMenu(null);
-  }, []);
-
-  const onNodeContextMenu = useCallback(
-    (event: MouseEvent, node: Node) => {
-      event.preventDefault();
-      const machina = graph.nodes.find((candidate) => candidate.id === node.id);
-      if (!machina) {
-        return;
-      }
-      setMenu({
-        target: { type: "node", id: node.id, nodeKind: machina.kind },
-        x: event.clientX,
-        y: event.clientY,
-      });
-    },
-    [graph.nodes],
-  );
-
-  const onEdgeContextMenu = useCallback(
-    (event: MouseEvent, edge: Edge) => {
-      event.preventDefault();
-      setMenu({
-        target: { type: "edge", id: edge.id },
-        x: event.clientX,
-        y: event.clientY,
-      });
-    },
-    [],
-  );
-
-  const onNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      const selectChanges: Array<{ type: string; id: string; selected: boolean }> = [];
-      for (const op of nodeChangeOps(changes)) {
-        if (op.op === "beginDrag") {
-          store.beginDrag(op.id);
-        } else if (op.op === "endDrag") {
-          store.endDrag();
-        } else if (op.op === "position") {
-          store.setNodePosition(op.id, op.position);
-        } else {
-          selectChanges.push({ type: "select", id: op.id, selected: op.selected });
-          if (op.selected) {
-            store.selectNode(op.id);
-          }
-        }
-      }
-      if (selectChanges.length > 0) {
-        setSelectedNodeIds((prev) => applySelectionChanges(prev, selectChanges));
-      }
-    },
-    [store],
-  );
-
-  const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => {
-      const ids = removedIds(changes);
-      if (ids.length > 0) {
-        store.deleteEdges(ids);
-      }
-      const selects = changes.filter((change) => change.type === "select");
-      if (selects.length > 0) {
-        setSelectedEdgeIds((prev) => applySelectionChanges(prev, selects));
-      }
-    },
-    [store],
-  );
-
+    closeMenu();
+    flow.clearSelection();
+  }, [closeMenu, flow]);
   const onNodeDoubleClick = useCallback(
     (_: unknown, node: Node) => {
-      setMenu(null);
+      closeMenu();
       store.enterSubgraph(node.id);
     },
-    [store],
+    [closeMenu, store],
   );
 
   return (
     <div
-      ref={canvasRef}
+      ref={connect.canvasRef}
       className={skipAnimations ? "skip-animations h-full w-full" : "h-full w-full"}
       data-machina-canvas=""
-      {...(activePortType ? { [ACTIVE_PORT_ATTR]: activePortType } : {})}
+      {...(connect.activePortType ? { [ACTIVE_PORT_ATTR]: connect.activePortType } : {})}
       style={{
         background: `var(--machina-canvas-bg, ${canvasBg})`,
         ["--machina-anim-ms" as string]: `${animationDelayMs(skipAnimations)}ms`,
       }}
     >
       <ReactFlow
-        nodes={flowNodes}
-        edges={flowEdges}
+        nodes={flow.nodes}
+        edges={flow.edges}
         nodeTypes={nodeTypes}
-        onConnect={onConnect}
-        onConnectStart={onConnectStart}
-        onConnectEnd={onConnectEnd}
-        connectionLineStyle={connectionLineStyleFor(activePortType)}
-        isValidConnection={isValidConnection}
+        onNodesChange={flow.onNodesChange}
+        onEdgesChange={flow.onEdgesChange}
+        onConnect={flow.onConnect}
+        onReconnect={flow.onReconnect}
+        onConnectStart={connect.onConnectStart}
+        onConnectEnd={connect.onConnectEnd}
+        connectionLineStyle={connect.connectionLineStyle}
+        isValidConnection={connect.isValidConnection}
+        onDrop={flow.onDrop}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        }}
         onNodeClick={onNodeClick}
         onNodeDoubleClick={onNodeDoubleClick}
         onNodeContextMenu={onNodeContextMenu}
         onEdgeContextMenu={onEdgeContextMenu}
         onPaneClick={onPaneClick}
         onPaneContextMenu={onPaneContextMenu}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
+        snapToGrid
+        snapGrid={[16, 16]}
         proOptions={{ hideAttribution: true }}
         deleteKeyCode={null}
         connectionRadius={20}
         colorMode="dark"
       >
-        <Background gap={16} color="#1a1a1a" />
-        <Controls />
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={16}
+          color="var(--machina-grid-dot, #2a2a2a)"
+        />
+        <Controls position="bottom-left" />
         <MiniMap
+          position="bottom-right"
+          pannable
+          zoomable
+          width={200}
+          height={120}
+          style={{ width: 200, height: 120 }}
           nodeColor={() => minimapNodeFill(rootStyle())}
           maskColor={minimapMaskColor(rootStyle())}
+          onNodeClick={flow.onMinimapNodeClick}
         />
       </ReactFlow>
       <CanvasContextMenu
@@ -314,7 +171,7 @@ export function Canvas({
         store={store}
         onPossessNode={onPossessNode}
         onMessage={onEdgeError}
-        onClose={() => setMenu(null)}
+        onClose={closeMenu}
       />
     </div>
   );
