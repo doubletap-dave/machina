@@ -13,6 +13,10 @@ body {
   font-family: var(--machina-font-mono, var(--font-ibm-plex-mono), ui-monospace, monospace);
 }
 
+.machina-hover:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--machina-panel-border) 80%, transparent);
+}
+
 html[data-machina-theme="machina"],
 [data-machina-theme="machina"] {
   --machina-canvas-bg: #0c0c0c;

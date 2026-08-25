@@ -65,7 +65,7 @@ export function ConfigurationPage({
 
   return (
     <main className="min-h-0 flex-1 overflow-y-auto p-4">
-      <p className="mb-4 text-sm text-neutral-300">
+      <p className="mb-4 text-sm" style={{ color: "var(--machina-text-muted)" }}>
         {settings.default
           ? `${settings.default.provider} / ${settings.default.model}`
           : noDefaultModelCopy()}

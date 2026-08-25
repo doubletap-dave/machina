@@ -4,6 +4,7 @@ import { describeNoLlmCopy } from "@machina/core";
 import { useCallback, useState } from "react";
 import { getStudioClient } from "@/lib/machina-client";
 import { useProjectSnapshot } from "@/lib/project-store-context";
+import { chromeField, chromeFill, chromeMuted } from "./studio-chrome";
 
 type DescribePanelProps = {
   onError: (message: string) => void;
@@ -46,8 +47,11 @@ export function DescribePanel({ onError, onSuccess }: DescribePanelProps) {
   }, [onError, onSuccess, prompt, store]);
 
   return (
-    <div className="border-b border-neutral-800 px-4 py-3">
-      <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+    <div className="border-b px-4 py-3" style={{ borderColor: "var(--machina-panel-border)" }}>
+      <label
+        className="mb-2 block text-xs font-semibold uppercase tracking-wide"
+        style={chromeMuted}
+      >
         Describe
       </label>
       <div className="flex gap-2">
@@ -55,13 +59,15 @@ export function DescribePanel({ onError, onSuccess }: DescribePanelProps) {
           value={prompt}
           onChange={(event) => setPrompt(event.target.value)}
           placeholder="Two nations with diplomacy…"
-          className="min-w-0 flex-1 rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 outline-none"
+          className="min-w-0 flex-1 rounded border px-3 py-2 text-sm outline-none"
+          style={chromeField}
         />
         <button
           type="button"
           disabled={busy}
           onClick={() => compose()}
-          className="rounded bg-neutral-200 px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
+          className="rounded px-3 py-2 text-sm font-medium disabled:opacity-50"
+          style={chromeFill}
         >
           Compose
         </button>

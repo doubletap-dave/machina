@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { listBuiltinPresets, type Preset } from "@machina/plugin-core";
 import { KIND_GROUP_ORDER, paletteGroup } from "@/lib/library-groups";
 import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
+import { chromeMuted, chromeText } from "./studio-chrome";
 
 type LibraryProps = {
   onAddKind: (kind: string) => void;
@@ -44,13 +45,16 @@ export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryPr
     >
       <div className="flex-1 space-y-4 overflow-y-auto">
         <section>
-          <h3 className="mb-1 text-xs text-neutral-600">Presets</h3>
+          <h3 className="mb-1 text-xs" style={chromeMuted}>
+            Presets
+          </h3>
           <ul className="space-y-1">
             {presets.map((preset) => (
               <li key={`${preset.category}-${preset.name}`}>
                 <button
                   type="button"
-                  className="w-full rounded px-2 py-1 text-left text-sm text-neutral-200 hover:bg-neutral-800"
+                  className="machina-hover w-full rounded px-2 py-1 text-left text-sm"
+                  style={chromeText}
                   onClick={() => onInsertPreset(preset)}
                 >
                   {preset.name}
@@ -61,12 +65,15 @@ export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryPr
         </section>
 
         <section>
-          <h3 className="mb-1 text-xs text-neutral-600">Templates</h3>
+          <h3 className="mb-1 text-xs" style={chromeMuted}>
+            Templates
+          </h3>
           <ul className="space-y-1">
             <li>
               <button
                 type="button"
-                className="w-full rounded px-2 py-1 text-left text-sm text-neutral-200 hover:bg-neutral-800"
+                className="machina-hover w-full rounded px-2 py-1 text-left text-sm"
+                style={chromeText}
                 onClick={() => onLoadTemplate("starter")}
               >
                 New world
@@ -75,7 +82,8 @@ export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryPr
             <li>
               <button
                 type="button"
-                className="w-full rounded px-2 py-1 text-left text-sm text-neutral-200 hover:bg-neutral-800"
+                className="machina-hover w-full rounded px-2 py-1 text-left text-sm"
+                style={chromeText}
                 onClick={() => onLoadTemplate("example")}
               >
                 Example world
@@ -85,7 +93,8 @@ export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryPr
               <button
                 type="button"
                 name="New kind"
-                className="w-full rounded px-2 py-1 text-left text-sm text-neutral-200 hover:bg-neutral-800"
+                className="machina-hover w-full rounded px-2 py-1 text-left text-sm"
+                style={chromeText}
                 onClick={() => store.beginAuthorKind()}
               >
                 New kind
@@ -96,13 +105,16 @@ export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryPr
 
         {grouped.map(({ group, items }) => (
           <section key={group}>
-            <h3 className="mb-1 text-xs text-neutral-600">{group}</h3>
+            <h3 className="mb-1 text-xs" style={chromeMuted}>
+              {group}
+            </h3>
             <ul className="space-y-1">
               {items.map((item) => (
                 <li key={item.kind}>
                   <button
                     type="button"
-                    className="w-full rounded px-2 py-1 text-left text-sm text-neutral-200 hover:bg-neutral-800"
+                    className="machina-hover w-full rounded px-2 py-1 text-left text-sm"
+                    style={chromeText}
                     onClick={() => onAddKind(item.kind)}
                   >
                     {item.name}

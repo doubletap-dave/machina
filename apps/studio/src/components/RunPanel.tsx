@@ -7,6 +7,7 @@ import { useProjectSnapshot } from "@/lib/project-store-context";
 import { AnalyzeTab } from "@/run/AnalyzeTab";
 import { PossessPanel } from "@/run/PossessPanel";
 import { legalPossessTargets, type Stance } from "@/run/stance";
+import { chromeFill, chromeGhost } from "./studio-chrome";
 
 type RunPanelProps = {
   onError: (message: string) => void;
@@ -199,7 +200,8 @@ export function RunPanel({
         <button
           type="button"
           disabled={busy}
-          className="rounded bg-neutral-200 px-3 py-1 font-medium text-black disabled:opacity-50"
+          className="rounded px-3 py-1 font-medium disabled:opacity-50"
+          style={chromeFill}
           onClick={() => void start()}
         >
           {runId ? "Restart run" : "Start run"}
@@ -207,7 +209,8 @@ export function RunPanel({
         <button
           type="button"
           disabled={busy || !runId}
-          className="rounded border border-neutral-700 px-3 py-1 disabled:opacity-50"
+          className="machina-hover rounded border px-3 py-1 disabled:opacity-50"
+          style={chromeGhost}
           onClick={() => void step()}
         >
           Step
@@ -215,7 +218,8 @@ export function RunPanel({
         <button
           type="button"
           disabled={!runId || paused}
-          className="rounded border border-neutral-700 px-3 py-1 disabled:opacity-50"
+          className="machina-hover rounded border px-3 py-1 disabled:opacity-50"
+          style={chromeGhost}
           onClick={() => void pause()}
         >
           Pause

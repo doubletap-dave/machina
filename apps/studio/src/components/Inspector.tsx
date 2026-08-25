@@ -8,6 +8,7 @@ import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
 import { KindAuthorForm } from "@/kinds/KindAuthorForm";
 import { browserKindLibrary } from "@/kinds/kind-library-client";
 import { findNodeById } from "./Canvas";
+import { chromeField, chromeGhost, chromeMuted, chromeText } from "./studio-chrome";
 
 const TRAIT_KEYS = new Set(["aggression", "paranoia", "cooperation", "risk"]);
 const AGENT_LLM_KEYS = new Set(["llmProvider", "llmModel"]);
@@ -76,12 +77,18 @@ export function Inspector() {
         borderColor: "var(--machina-panel-border)",
       }}
     >
-      <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Inspector</h2>
-      <p className="mb-4 text-sm font-medium text-neutral-100">{def.metadata.name}</p>
+      <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide" style={chromeMuted}>
+        Inspector
+      </h2>
+      <p className="mb-4 text-sm font-medium" style={chromeText}>
+        {def.metadata.name}
+      </p>
 
       {isAgent ? <AgentLlmFields config={config} settings={settings} onChange={onChange} /> : null}
       {fields.length === 0 && !isAgent ? (
-        <p className="text-xs text-neutral-500">No editable fields for this node yet.</p>
+        <p className="text-xs" style={chromeMuted}>
+          No editable fields for this node yet.
+        </p>
       ) : (
         <ManifestFields fields={fields} config={config} onChange={onChange} />
       )}
@@ -89,7 +96,8 @@ export function Inspector() {
       {selected.subgraphId ? (
         <button
           type="button"
-          className="mt-4 w-full rounded border border-neutral-700 px-2 py-1 text-xs text-neutral-200 hover:bg-neutral-800"
+          className="machina-hover mt-4 w-full rounded border px-2 py-1 text-xs"
+          style={chromeGhost}
           onClick={() => store.enterSubgraph(selected.id)}
         >
           Enter nested graph
@@ -118,10 +126,11 @@ function AgentLlmFields({
 
   return (
     <div className="space-y-3">
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs" style={chromeMuted}>
         Language model provider
         <select
-          className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+          className="mt-1 w-full rounded border px-2 py-1 text-sm"
+          style={chromeField}
           value={providerValue}
           onChange={(event) => {
             const next = event.target.value;
@@ -140,10 +149,11 @@ function AgentLlmFields({
           ))}
         </select>
       </label>
-      <label className="block text-xs text-neutral-400">
+      <label className="block text-xs" style={chromeMuted}>
         Language model
         <select
-          className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+          className="mt-1 w-full rounded border px-2 py-1 text-sm"
+          style={chromeField}
           value={modelValue}
           onChange={(event) => {
             const next = event.target.value;
@@ -184,7 +194,7 @@ function ManifestFields({
       {fields.map((field) => {
         if (field.type === "boolean") {
           return (
-            <label key={field.key} className="flex items-center gap-2 text-xs text-neutral-400">
+            <label key={field.key} className="flex items-center gap-2 text-xs" style={chromeMuted}>
               <input
                 type="checkbox"
                 checked={Boolean(config[field.key] ?? field.default ?? false)}
@@ -196,10 +206,11 @@ function ManifestFields({
         }
         if (field.type === "enum") {
           return (
-            <label key={field.key} className="block text-xs text-neutral-400">
+            <label key={field.key} className="block text-xs" style={chromeMuted}>
               {field.label}
               <select
-                className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+                className="mt-1 w-full rounded border px-2 py-1 text-sm"
+                style={chromeField}
                 value={String(config[field.key] ?? field.default ?? "")}
                 onChange={(event) => onChange({ [field.key]: event.target.value })}
               >
@@ -214,7 +225,7 @@ function ManifestFields({
         }
         if (field.type === "number" && TRAIT_KEYS.has(field.key)) {
           return (
-            <label key={field.key} className="block text-xs text-neutral-400">
+            <label key={field.key} className="block text-xs" style={chromeMuted}>
               {field.label}
               <input
                 type="range"
@@ -228,11 +239,12 @@ function ManifestFields({
           );
         }
         return (
-          <label key={field.key} className="block text-xs text-neutral-400">
+          <label key={field.key} className="block text-xs" style={chromeMuted}>
             {field.label}
             <input
               type={field.type === "number" ? "number" : "text"}
-              className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+              className="mt-1 w-full rounded border px-2 py-1 text-sm"
+              style={chromeField}
               value={String(config[field.key] ?? field.default ?? "")}
               onChange={(event) =>
                 onChange({

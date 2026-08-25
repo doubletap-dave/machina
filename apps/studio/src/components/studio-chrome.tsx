@@ -12,11 +12,37 @@ export const MODE_LABEL: Record<StudioMode, string> = {
   configure: "Configure",
 };
 
-const panelChrome: CSSProperties = {
+export const chromePanel: CSSProperties = {
   background: "var(--machina-panel-bg)",
   borderColor: "var(--machina-panel-border)",
   color: "var(--machina-text)",
 };
+
+export const chromeField: CSSProperties = {
+  background: "var(--machina-canvas-bg)",
+  borderColor: "var(--machina-panel-border)",
+  color: "var(--machina-text)",
+};
+
+export const chromeMuted: CSSProperties = {
+  color: "var(--machina-text-muted)",
+};
+
+export const chromeText: CSSProperties = {
+  color: "var(--machina-text)",
+};
+
+export const chromeFill: CSSProperties = {
+  background: "var(--machina-accent)",
+  color: "var(--machina-canvas-bg)",
+};
+
+export const chromeGhost: CSSProperties = {
+  borderColor: "var(--machina-panel-border)",
+  color: "var(--machina-text)",
+};
+
+const panelChrome = chromePanel;
 
 export function StudioHeader({
   brand,

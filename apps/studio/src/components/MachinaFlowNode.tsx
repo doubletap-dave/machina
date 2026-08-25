@@ -27,7 +27,7 @@ export function MachinaFlowNode({ data }: NodeProps) {
       <div className="mb-2 font-medium">{nodeData.label}</div>
       <div className="space-y-1">
         {portEntries.map(([key, port]) => (
-          <div key={key} className="relative flex items-center justify-between text-xs text-neutral-400">
+          <div key={key} className="relative flex items-center justify-between text-xs" style={{ color: "var(--machina-text-muted)" }}>
             {port.dir === "in" ? (
               <>
                 <PortHandle handleId={key} port={port} />
