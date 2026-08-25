@@ -161,7 +161,7 @@ pnpm install
 pnpm dev                               # browser: Studio @ :3000 + runtime @ :4000
 pnpm dev:studio                        # Studio only
 pnpm dev:runtime                       # Runtime API only
-pnpm test                              # workspace automated tests
+pnpm test                              # 277/277 workspace automated tests
 pnpm --filter @machina/engine test     # 37/37 in-process engine (credentials, list-models, createLlmThink, kind start-refuse)
 pnpm --filter @machina/runtime test    # 27/27 including settings HTTP + compose + kind compile/start
 pnpm --filter @machina/client test     # 10/10 HTTP + WS + settings + compose
