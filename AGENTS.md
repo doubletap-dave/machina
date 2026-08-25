@@ -40,11 +40,12 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | 2a Presets + LLM compose | ✅ Merged | `lane/2a-presets` @ `cfd00d3` | 4/4 plugin-core · 9/9 graph · 8/8 studio |
 | 2b RUN instrumentation | ✅ Merged | `lane/2b-run` @ `d98301f` | 12/12 sim · 10/10 studio · 7/7 runtime |
 | **3 Dead Channel Lite** | **✅ Done** | **`master` @ `993fef8`** | **77/77 (`pnpm test`)** |
-| Studio canvas-ops | ⏳ In progress | `master` @ `71704b3` | 81/81 (`@machina/studio`) |
+| Studio canvas-ops | ✅ Done | `master` @ `643ef84` | 81/81 (`@machina/studio` at report) |
 | Studio port-language | ✅ Done | `master` @ `ba311ca` | 9/9 (`@machina/ui`) · 89/89 (`@machina/studio`) |
 | Models and credentials | ✅ Done | `master` @ `2c23ff7` | 33/33 engine · 26/26 runtime · 10/10 client · 5/5 plugin-core · 99/99 studio |
+| Kind author | ✅ Done | `master` @ `176c7dd` | 37/37 engine · 27/27 runtime · 7/7 node-sdk · 112/112 studio |
 
-Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md` · `lane-studio-models.md`
+Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md` · `lane-studio-models.md` · `lane-studio-kind-author.md`
 
 ---
 
@@ -85,9 +86,10 @@ vitest.workspace.ts       # TODO: migrate to vitest.config.ts test.projects (Vit
 .nvmrc                    # 22
 
 packages/core/src/
-  ports.ts errors.ts match-ports.ts ir.ts plan.ts events.ts packets.ts instrument.ts llm-english.ts index.ts
+  ports.ts errors.ts match-ports.ts ir.ts plan.ts events.ts packets.ts instrument.ts llm-english.ts
+  kind-manifest.ts kind-hash.ts kind-english.ts index.ts
 packages/node-sdk/src/
-  define-node.ts index.ts
+  define-node.ts from-manifest.ts index.ts
 packages/ui/src/
   english.ts tokens.ts port-language.ts index.ts
 plugins/core/src/
@@ -97,15 +99,20 @@ packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.
                           # Lane 2b ✅ — instrument.ts (InstrumentMsg, onInstrument callback)
 packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
+                          # kinds/: loadKindManifests, verifyProjectKinds, saveProject(..., kinds)
 packages/engine/          # openEngine, openEngineFromProject — in-process world runner
                           # credentials.ts — join(homedir(), ".machina", "credentials.json"); env overlay
                           # list-models.ts — listAndVerify (injectable fetch)
                           # llm-think.ts — createLlmThink (default Think when opts.think omitted)
+                          # OpenEngineOpts.kinds — compile OK / start refuse when runtime omitted
 packages/client/          # MachinaClient — HTTP + WS; settings: getSettings, putProviderKey, deleteProvider, refreshProvider, putDefault
+                          # compile(project, kinds?), startRun({ kinds? })
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
                           # canvas-ops — src/canvas/; lib/undo-stack.ts, lib/graph-edit.ts
                           # port-language — src/canvas/port-symbol.tsx; connect-highlight.ts
                           # Configuration — components/ConfigurationPage.tsx (Configure mode)
+                          # kinds/ — KindAuthorForm, kind-library (~/.machina/kinds), validate-kind
+                          # app/api/kind-library — Studio publish / add-from-library
 apps/runtime/             # HTTP/CLI drive @machina/engine (app.ts, serve.ts, run-project.ts, cli.ts)
 apps/runtime/src/settings.ts # GET/PUT/DELETE /settings/* (no apiKey on GET); env overlay + in-memory verify
 apps/runtime/src/compose.ts  # POST /compose — same verified view as GET /settings/models
@@ -120,21 +127,21 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 ## Frozen exports (Wave 0 — do not rename)
 
-**`@machina/core`:** `PortType`, `PortDef`, `Cardinality`, `MachinaError`, `machinaError`, `matchPorts`, `MachinaProject`, `GraphDocument`, `MachinaNode`, `MachinaEdge`, `Wire`, `SimulationPlan`, `ObservationPacket`, `MachinaEvent`, `AgentAction`, `stripPositions`, `InstrumentMsg`, `keyRefusedCopy`, `providerUnreachableCopy`, `illegalModelActionCopy`, `agentLlmIncompleteCopy`, `credentialsUnreadableCopy`, `noDefaultModelCopy`, `describeNoLlmCopy`
+**`@machina/core`:** `PortType`, `PortDef`, `Cardinality`, `MachinaError`, `machinaError`, `matchPorts`, `MachinaProject`, `GraphDocument`, `MachinaNode`, `MachinaEdge`, `Wire`, `SimulationPlan`, `ObservationPacket`, `MachinaEvent`, `AgentAction`, `stripPositions`, `InstrumentMsg`, `keyRefusedCopy`, `providerUnreachableCopy`, `illegalModelActionCopy`, `agentLlmIncompleteCopy`, `credentialsUnreadableCopy`, `noDefaultModelCopy`, `describeNoLlmCopy`, `KindManifest`, `KindField`, `canonicalKindJson`, `kindHash`, `kindNoRuntimeCopy`, `kindPinMismatchCopy`, `kindUnpinnedFileCopy`, `kindPinMissingFileCopy`, `kindIdReservedCopy`
 
-**`@machina/node-sdk`:** `defineNode`, `NodeDefinition`, `NodeRegistry`, `createRegistry`
+**`@machina/node-sdk`:** `defineNode`, `NodeDefinition`, `NodeRegistry`, `createRegistry`, `kindManifestToDefinition`
 
 **`@machina/graph`:** `compile`, `composeFromDescription`, `ComposeProposer`
 
 **`@machina/plugin-core`:** `registerCoreKinds`, 14 kinds v1, `nationPreset`, `cabinetPreset`, `agencyPreset`, `listBuiltinPresets`, `Preset`
 
-**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`, `fontMono`, `animationDelayMs`, `PORT_LANGUAGE`, `portLanguage`
+**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`, `fontMono`, `animationDelayMs`, `PORT_LANGUAGE`, `portLanguage`, `kindNoRuntimeCopy`, `kindIdReservedCopy` (re-exports)
 
 **`@machina/simulation`:** `createRng`, `createKernel`, `createKernelFromPlan`, `actorIdsFromPlan`, `Kernel`, `ThinkFn`, `InstrumentMsg` — **`TrueWorldState` is internal only**
 
 **`@machina/agents`:** `createAgentRuntime`, `compileAgentGraph`, `createAgentCheckpointer`, `PgliteCheckpointer`, `AgentRuntime`, `ThinkResult`, `Usage`
 
-**`@machina/persistence`:** `saveProject`, `loadProject`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
+**`@machina/persistence`:** `saveProject`, `loadProject`, `loadKindManifests`, `verifyProjectKinds`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
 
 **`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`, `credentialsPath`, `loadCredentials`, `saveCredentials`, `publicProviderView`, `last4`, `restrictToOwner`, `ProviderId`, `CredentialsFile`, `listAndVerify`, `ListModelsResult`, `apiKeyFromEnv`, `isProviderId`, `PROVIDER_IDS`, `PROVIDER_ENV`, `createLlmThink`, `langchainInvokeChat`
 
@@ -153,9 +160,10 @@ pnpm dev                               # browser: Studio @ :3000 + runtime @ :40
 pnpm dev:studio                        # Studio only
 pnpm dev:runtime                       # Runtime API only
 pnpm test                              # workspace automated tests
-pnpm --filter @machina/engine test     # 33/33 in-process engine (credentials, list-models, createLlmThink)
-pnpm --filter @machina/runtime test    # 26/26 including settings HTTP + compose
+pnpm --filter @machina/engine test     # 37/37 in-process engine (credentials, list-models, createLlmThink, kind start-refuse)
+pnpm --filter @machina/runtime test    # 27/27 including settings HTTP + compose + kind compile/start
 pnpm --filter @machina/client test     # 10/10 HTTP + WS + settings + compose
+pnpm --filter @machina/studio test     # 112/112 including kind author + library
 
 # Add a dependency to a package (example)
 cd packages/graph
