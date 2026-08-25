@@ -36,5 +36,6 @@ export function kindManifestToDefinition(manifest: KindManifest): NodeDefinition
     metadata: { name: manifest.name, category: manifest.category },
     ports: manifest.ports,
     configSchema: z.object(shape),
+    fields: manifest.fields,
   });
 }

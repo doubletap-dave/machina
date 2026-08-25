@@ -1,5 +1,5 @@
 import { defineNode } from "@machina/node-sdk";
-import { baseConfigSchema } from "./schemas.ts";
+import { inspectorConfigSchema, loggerConfigSchema } from "./schemas.ts";
 
 export const inspectorKind = defineNode({
   type: "analysis.inspector",
@@ -11,10 +11,11 @@ export const inspectorKind = defineNode({
       dir: "in",
       type: "WORLD_STATE",
       cardinality: "fan-in",
-      label: "what to inspect",
+      label: "State",
     },
   },
-  configSchema: baseConfigSchema,
+  configSchema: inspectorConfigSchema,
+  fields: [{ key: "title", label: "Title", type: "string", default: "Inspector" }],
   runtime: "none",
 });
 
@@ -28,9 +29,18 @@ export const loggerKind = defineNode({
       dir: "in",
       type: "EVENT",
       cardinality: "fan-in",
-      label: "what to record",
+      label: "Events",
     },
   },
-  configSchema: baseConfigSchema,
+  configSchema: loggerConfigSchema,
+  fields: [
+    {
+      key: "record",
+      label: "Record",
+      type: "enum",
+      options: ["events", "actions", "both"],
+      default: "both",
+    },
+  ],
   runtime: "mechanical",
 });

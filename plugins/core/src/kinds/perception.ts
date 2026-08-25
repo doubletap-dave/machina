@@ -1,5 +1,5 @@
 import { defineNode } from "@machina/node-sdk";
-import { baseConfigSchema } from "./schemas.ts";
+import { perceptionConfigSchema } from "./schemas.ts";
 
 export const perceptionKind = defineNode({
   type: "perception.perception",
@@ -11,16 +11,17 @@ export const perceptionKind = defineNode({
       dir: "in",
       type: "WORLD_STATE",
       cardinality: "exclusive",
-      label: "what is true",
+      label: "State",
     },
     observation: {
       name: "observation",
       dir: "out",
       type: "OBSERVATION",
       cardinality: "fan-out",
-      label: "what they see",
+      label: "Observation",
     },
   },
-  configSchema: baseConfigSchema,
+  configSchema: perceptionConfigSchema,
+  fields: [{ key: "fog", label: "Fog", type: "number", default: 50 }],
   runtime: "mechanical",
 });

@@ -1,5 +1,5 @@
 import { defineNode } from "@machina/node-sdk";
-import { baseConfigSchema, clockConfigSchema } from "./schemas.ts";
+import { clockConfigSchema, eventConfigSchema } from "./schemas.ts";
 
 export const clockKind = defineNode({
   type: "control.clock",
@@ -11,10 +11,19 @@ export const clockKind = defineNode({
       dir: "out",
       type: "CLOCK",
       cardinality: "fan-out",
-      label: "when time moves",
+      label: "Tick",
     },
   },
   configSchema: clockConfigSchema,
+  fields: [
+    {
+      key: "period",
+      label: "Period",
+      type: "enum",
+      options: ["turn", "day", "week", "month", "year"],
+      default: "month",
+    },
+  ],
   runtime: "mechanical",
 });
 
@@ -28,9 +37,13 @@ export const eventKind = defineNode({
       dir: "in",
       type: "EVENT",
       cardinality: "fan-in",
-      label: "what happened",
+      label: "Events",
     },
   },
-  configSchema: baseConfigSchema,
+  configSchema: eventConfigSchema,
+  fields: [
+    { key: "name", label: "Name", type: "string", default: "Event" },
+    { key: "description", label: "Description", type: "string", default: "" },
+  ],
   runtime: "mechanical",
 });

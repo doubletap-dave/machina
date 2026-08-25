@@ -1,5 +1,9 @@
 import { defineNode } from "@machina/node-sdk";
-import { actorConfigSchema, baseConfigSchema } from "./schemas.ts";
+import {
+  actorConfigSchema,
+  resourceConfigSchema,
+  worldConfigSchema,
+} from "./schemas.ts";
 
 export const worldKind = defineNode({
   type: "entities.world",
@@ -11,17 +15,18 @@ export const worldKind = defineNode({
       dir: "in",
       type: "CLOCK",
       cardinality: "exclusive",
-      label: "when time moves",
+      label: "Tick",
     },
     state: {
       name: "state",
       dir: "out",
       type: "WORLD_STATE",
       cardinality: "fan-out",
-      label: "what is true",
+      label: "State",
     },
   },
-  configSchema: baseConfigSchema,
+  configSchema: worldConfigSchema,
+  fields: [{ key: "name", label: "Name", type: "string", default: "World" }],
   runtime: "mechanical",
 });
 
@@ -35,45 +40,46 @@ export const actorKind = defineNode({
       dir: "in",
       type: "CLOCK",
       cardinality: "exclusive",
-      label: "when time moves",
+      label: "Tick",
     },
     personality: {
       name: "personality",
       dir: "in",
       type: "PERSONALITY",
       cardinality: "exclusive",
-      label: "how they think",
+      label: "Personality",
     },
     goals: {
       name: "goals",
       dir: "in",
       type: "GOAL",
       cardinality: "fan-in",
-      label: "what they want",
+      label: "Goals",
     },
     memory: {
       name: "memory",
       dir: "in",
       type: "MEMORY",
       cardinality: "exclusive",
-      label: "what they remember",
+      label: "Memory",
     },
     ref: {
       name: "ref",
       dir: "out",
       type: "ACTOR_REF",
       cardinality: "fan-out",
-      label: "who they are",
+      label: "Actor",
     },
     state: {
       name: "state",
       dir: "out",
       type: "WORLD_STATE",
       cardinality: "fan-out",
-      label: "what is true about them",
+      label: "State",
     },
   },
   configSchema: actorConfigSchema,
+  fields: [{ key: "name", label: "Name", type: "string" }],
   runtime: "actor",
 });
 
@@ -87,9 +93,13 @@ export const resourceKind = defineNode({
       dir: "out",
       type: "RESOURCE",
       cardinality: "fan-out",
-      label: "what they have",
+      label: "Stock",
     },
   },
-  configSchema: baseConfigSchema,
+  configSchema: resourceConfigSchema,
+  fields: [
+    { key: "name", label: "Name", type: "string", default: "Resource" },
+    { key: "amount", label: "Amount", type: "number", default: 0 },
+  ],
   runtime: "mechanical",
 });

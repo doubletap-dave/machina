@@ -259,7 +259,7 @@ describe("HTTP control plane", () => {
           dir: "in",
           type: "CLOCK",
           cardinality: "exclusive",
-          label: "when time moves",
+          label: "Tick",
         },
       },
       fields: [],

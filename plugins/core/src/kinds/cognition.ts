@@ -1,9 +1,17 @@
 import { defineNode } from "@machina/node-sdk";
 import {
   agentConfigSchema,
-  baseConfigSchema,
+  goalConfigSchema,
+  memoryConfigSchema,
   personalityConfigSchema,
 } from "./schemas.ts";
+
+const traitField = (key: string, label: string) => ({
+  key,
+  label,
+  type: "number" as const,
+  default: 50,
+});
 
 export const personalityKind = defineNode({
   type: "cognition.personality",
@@ -15,10 +23,16 @@ export const personalityKind = defineNode({
       dir: "out",
       type: "PERSONALITY",
       cardinality: "fan-out",
-      label: "how they think",
+      label: "Personality",
     },
   },
   configSchema: personalityConfigSchema,
+  fields: [
+    traitField("aggression", "Aggression"),
+    traitField("paranoia", "Paranoia"),
+    traitField("cooperation", "Cooperation"),
+    traitField("risk", "Risk"),
+  ],
   runtime: "none",
 });
 
@@ -32,10 +46,14 @@ export const goalKind = defineNode({
       dir: "out",
       type: "GOAL",
       cardinality: "fan-out",
-      label: "what they want",
+      label: "Goals",
     },
   },
-  configSchema: baseConfigSchema,
+  configSchema: goalConfigSchema,
+  fields: [
+    { key: "statement", label: "Statement", type: "string", default: "New goal" },
+    { key: "priority", label: "Priority", type: "number", default: 50 },
+  ],
   runtime: "none",
 });
 
@@ -49,17 +67,18 @@ export const memoryKind = defineNode({
       dir: "in",
       type: "EVENT",
       cardinality: "fan-in",
-      label: "what happened",
+      label: "Events",
     },
     memory: {
       name: "memory",
       dir: "out",
       type: "MEMORY",
       cardinality: "fan-out",
-      label: "what they remember",
+      label: "Memory",
     },
   },
-  configSchema: baseConfigSchema,
+  configSchema: memoryConfigSchema,
+  fields: [{ key: "seed", label: "Seed", type: "string", default: "" }],
   runtime: "none",
 });
 
@@ -73,44 +92,53 @@ export const agentKind = defineNode({
       dir: "in",
       type: "OBSERVATION",
       cardinality: "exclusive",
-      label: "what they see",
+      label: "Observation",
     },
     memory: {
       name: "memory",
       dir: "in",
       type: "MEMORY",
       cardinality: "exclusive",
-      label: "what they remember",
+      label: "Memory",
     },
     goals: {
       name: "goals",
       dir: "in",
       type: "GOAL",
       cardinality: "fan-in",
-      label: "what they want",
+      label: "Goals",
     },
     personality: {
       name: "personality",
       dir: "in",
       type: "PERSONALITY",
       cardinality: "exclusive",
-      label: "how they think",
+      label: "Personality",
     },
     action: {
       name: "action",
       dir: "out",
       type: "ACTION",
       cardinality: "fan-out",
-      label: "what they do",
+      label: "Action",
     },
     message: {
       name: "message",
       dir: "out",
       type: "MESSAGE",
       cardinality: "fan-out",
-      label: "what they say",
+      label: "Message",
     },
   },
   configSchema: agentConfigSchema,
+  fields: [
+    {
+      key: "llmProvider",
+      label: "Language model provider",
+      type: "enum",
+      options: ["anthropic", "openai", "openrouter", "perplexity"],
+    },
+    { key: "llmModel", label: "Language model", type: "string" },
+  ],
   runtime: "agent",
 });

@@ -1,5 +1,5 @@
 import { defineNode } from "@machina/node-sdk";
-import { baseConfigSchema, systemConfigSchema } from "./schemas.ts";
+import { relationshipConfigSchema, systemConfigSchema } from "./schemas.ts";
 
 export const systemKind = defineNode({
   type: "systems.system",
@@ -11,45 +11,46 @@ export const systemKind = defineNode({
       dir: "in",
       type: "CLOCK",
       cardinality: "exclusive",
-      label: "when time moves",
+      label: "Tick",
     },
     actors: {
       name: "actors",
       dir: "in",
       type: "ACTOR_REF",
       cardinality: "fan-in",
-      label: "who is involved",
+      label: "Actor",
     },
     actions: {
       name: "actions",
       dir: "in",
       type: "ACTION",
       cardinality: "fan-in",
-      label: "what they do",
+      label: "Action",
     },
     resources: {
       name: "resources",
       dir: "in",
       type: "RESOURCE",
       cardinality: "fan-in",
-      label: "what they have",
+      label: "Stock",
     },
     events: {
       name: "events",
       dir: "out",
       type: "EVENT",
       cardinality: "fan-out",
-      label: "what happened",
+      label: "Events",
     },
     state: {
       name: "state",
       dir: "out",
       type: "WORLD_STATE",
       cardinality: "fan-out",
-      label: "what changed",
+      label: "State",
     },
   },
   configSchema: systemConfigSchema,
+  fields: [{ key: "mechanic", label: "Mechanic", type: "string", default: "generic" }],
   runtime: "mechanical",
 });
 
@@ -63,23 +64,24 @@ export const relationshipKind = defineNode({
       dir: "in",
       type: "ACTOR_REF",
       cardinality: "fan-in",
-      label: "who is involved",
+      label: "Actor",
     },
     relationship: {
       name: "relationship",
       dir: "out",
       type: "RELATIONSHIP",
       cardinality: "fan-out",
-      label: "how they stand",
+      label: "Stance",
     },
     events: {
       name: "events",
       dir: "out",
       type: "EVENT",
       cardinality: "fan-out",
-      label: "what happened",
+      label: "Events",
     },
   },
-  configSchema: baseConfigSchema,
+  configSchema: relationshipConfigSchema,
+  fields: [{ key: "stance", label: "Stance", type: "number", default: 50 }],
   runtime: "mechanical",
 });

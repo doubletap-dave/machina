@@ -33,6 +33,7 @@ describe("kindManifestToDefinition", () => {
     expect(got.version).toBe(1);
     expect(got.metadata).toEqual({ name: "Radio desk", category: "Systems" });
     expect(got.ports).toEqual(radioDesk.ports);
+    expect(got.fields).toEqual(radioDesk.fields);
     expect(got.configSchema.parse({})).toEqual({ label: "desk" });
     expect(got.runtime).toBeUndefined();
   });

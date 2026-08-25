@@ -202,7 +202,7 @@ const fooKind: KindManifest = {
       dir: "in",
       type: "CLOCK",
       cardinality: "exclusive",
-      label: "when time moves",
+      label: "Tick",
     },
   },
   fields: [],
