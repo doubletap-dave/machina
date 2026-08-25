@@ -227,4 +227,55 @@ describe("RunPanel", () => {
 
     expect(setStance).toHaveBeenCalledWith("run-1", "possess", "actor-1");
   });
+
+  it("does not fetch truth until setStance god resolves", async () => {
+    const user = userEvent.setup();
+    let resolveStance: () => void = () => {};
+    const pending = new Promise<void>((resolve) => {
+      resolveStance = resolve;
+    });
+    setStance.mockReturnValue(pending);
+    getTruth.mockResolvedValue({
+      turn: 1,
+      actors: { a: { name: "Ada", resources: { economy: 50 } } },
+    });
+
+    function GodAfterPauseHarness() {
+      const [stance, setStanceState] = useState<Stance>({ mode: "watch" });
+      return (
+        <>
+          <button type="button" onClick={() => setStanceState({ mode: "god" })}>
+            Go god
+          </button>
+          <SeededRunPanel
+            onError={() => {}}
+            stance={stance}
+            onStanceChange={setStanceState}
+          />
+        </>
+      );
+    }
+
+    render(
+      <ProjectStoreProvider registry={createStudioRegistry()}>
+        <GodAfterPauseHarness />
+      </ProjectStoreProvider>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Start run" }));
+    await user.click(await screen.findByRole("button", { name: "Pause" }));
+    await user.click(screen.getByRole("button", { name: "Go god" }));
+
+    expect(setStance).toHaveBeenCalledWith("run-1", "god", undefined);
+    expect(getTruth).not.toHaveBeenCalled();
+    expect(screen.queryByRole("spinbutton", { name: /economy/i })).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveStance();
+      await pending;
+    });
+
+    expect(getTruth).toHaveBeenCalledWith("run-1");
+    expect(await screen.findByRole("spinbutton", { name: /economy/i })).toBeInTheDocument();
+  });
 });

@@ -37,6 +37,7 @@ export function RunPanel({
   const [busy, setBusy] = useState(false);
   const [paused, setPaused] = useState(false);
   const [packet, setPacket] = useState<ObservationPacket | null>(null);
+  const [godAcked, setGodAcked] = useState(false);
 
   const possessTargets = useMemo(
     () => legalPossessTargets(store.getProject(), store.getSelectedNodeId()),
@@ -161,14 +162,39 @@ export function RunPanel({
     const stanceChanged =
       prevStance.current.mode !== stance.mode || prevStance.current.nodeId !== stance.nodeId;
     prevStance.current = stance;
-    if (!runId || !stanceChanged) {
+
+    if (stance.mode !== "god") {
+      setGodAcked(false);
+    }
+
+    if (!runId) {
       return;
+    }
+
+    if (!stanceChanged) {
+      if (stance.mode === "god") {
+        setGodAcked(true);
+      }
+      return;
+    }
+
+    let cancelled = false;
+    if (stance.mode === "god") {
+      setGodAcked(false);
     }
     void getStudioClient()
       .setStance(runId, stance.mode, stance.nodeId)
+      .then(() => {
+        if (!cancelled && stance.mode === "god") {
+          setGodAcked(true);
+        }
+      })
       .catch((error: unknown) => {
         onError(error instanceof Error ? error.message : "Stance update failed.");
       });
+    return () => {
+      cancelled = true;
+    };
   }, [onError, runId, stance]);
 
   useEffect(() => {
@@ -234,7 +260,7 @@ export function RunPanel({
         <span style={{ color: "var(--machina-text-muted)" }}>Turn {turn}</span>
       </div>
 
-      {stance.mode === "god" && paused && runId ? (
+      {stance.mode === "god" && paused && runId && godAcked ? (
         <GodInspector runId={runId} onError={onError} />
       ) : null}
 

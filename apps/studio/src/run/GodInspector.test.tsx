@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GodInspector } from "./GodInspector";
@@ -47,5 +47,53 @@ describe("GodInspector", () => {
       value: 25,
       noticeable: true,
     });
+  });
+
+  it("posts only the one resource that differs from truth", async () => {
+    const user = userEvent.setup();
+    getTruth.mockResolvedValue({
+      turn: 1,
+      actors: {
+        a: { name: "Ada", resources: { economy: 50 } },
+        b: { name: "Bob", resources: { economy: 50 } },
+      },
+    });
+    render(<GodInspector runId="run-1" />);
+
+    const ada = await screen.findByRole("group", { name: "Ada" });
+    const adaEconomy = within(ada).getByRole("spinbutton", { name: /economy/i });
+    await user.clear(adaEconomy);
+    await user.type(adaEconomy, "10");
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+
+    expect(applyIntervention).toHaveBeenCalledTimes(1);
+    expect(applyIntervention).toHaveBeenCalledWith("run-1", {
+      path: "actors.a.resources.economy",
+      value: 10,
+      noticeable: false,
+    });
+  });
+
+  it("disables Apply when more than one resource differs", async () => {
+    const user = userEvent.setup();
+    getTruth.mockResolvedValue({
+      turn: 1,
+      actors: {
+        a: { name: "Ada", resources: { economy: 50 } },
+        b: { name: "Bob", resources: { economy: 50 } },
+      },
+    });
+    render(<GodInspector runId="run-1" />);
+
+    const ada = await screen.findByRole("group", { name: "Ada" });
+    const bob = screen.getByRole("group", { name: "Bob" });
+    await user.clear(within(ada).getByRole("spinbutton", { name: /economy/i }));
+    await user.type(within(ada).getByRole("spinbutton", { name: /economy/i }), "10");
+    await user.clear(within(bob).getByRole("spinbutton", { name: /economy/i }));
+    await user.type(within(bob).getByRole("spinbutton", { name: /economy/i }), "20");
+
+    expect(screen.getByRole("button", { name: "Apply" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Apply" }));
+    expect(applyIntervention).not.toHaveBeenCalled();
   });
 });

@@ -1,7 +1,7 @@
 "use client";
 
 import type { GodView } from "@machina/core";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getStudioClient } from "@/lib/machina-client";
 import { chromeField, chromeFill } from "../components/studio-chrome";
 
@@ -10,9 +10,31 @@ type GodInspectorProps = {
   onError?: (message: string) => void;
 };
 
+type ResourceDraft = Record<string, Record<string, string>>;
+
+type PendingEdit = { path: string; value: number };
+
+function differingEdits(truth: GodView, draft: ResourceDraft): PendingEdit[] {
+  const edits: PendingEdit[] = [];
+  for (const [actorId, actor] of Object.entries(truth.actors)) {
+    for (const [key, original] of Object.entries(actor.resources)) {
+      const raw = draft[actorId]?.[key];
+      if (raw === undefined) {
+        continue;
+      }
+      const value = Number(raw);
+      if (value === original) {
+        continue;
+      }
+      edits.push({ path: `actors.${actorId}.resources.${key}`, value });
+    }
+  }
+  return edits;
+}
+
 export function GodInspector({ runId, onError }: GodInspectorProps) {
   const [truth, setTruth] = useState<GodView | null>(null);
-  const [draft, setDraft] = useState<Record<string, Record<string, string>>>({});
+  const [draft, setDraft] = useState<ResourceDraft>({});
   const [noticeable, setNoticeable] = useState(false);
 
   useEffect(() => {
@@ -24,7 +46,7 @@ export function GodInspector({ runId, onError }: GodInspectorProps) {
           return;
         }
         setTruth(view);
-        const next: Record<string, Record<string, string>> = {};
+        const next: ResourceDraft = {};
         for (const [actorId, actor] of Object.entries(view.actors)) {
           next[actorId] = {};
           for (const [key, value] of Object.entries(actor.resources)) {
@@ -41,6 +63,9 @@ export function GodInspector({ runId, onError }: GodInspectorProps) {
     };
   }, [onError, runId]);
 
+  const edits = useMemo(() => (truth ? differingEdits(truth, draft) : []), [draft, truth]);
+  const canApply = edits.length === 1;
+
   if (!truth) {
     return null;
   }
@@ -50,22 +75,19 @@ export function GodInspector({ runId, onError }: GodInspectorProps) {
       className="flex flex-col gap-3"
       onSubmit={(event) => {
         event.preventDefault();
-        void (async () => {
-          try {
-            const client = getStudioClient();
-            for (const [actorId, resources] of Object.entries(draft)) {
-              for (const [key, raw] of Object.entries(resources)) {
-                await client.applyIntervention(runId, {
-                  path: `actors.${actorId}.resources.${key}`,
-                  value: Number(raw),
-                  noticeable,
-                });
-              }
-            }
-          } catch (error) {
+        const edit = edits[0];
+        if (!canApply || !edit) {
+          return;
+        }
+        void getStudioClient()
+          .applyIntervention(runId, {
+            path: edit.path,
+            value: edit.value,
+            noticeable,
+          })
+          .catch((error: unknown) => {
             onError?.(error instanceof Error ? error.message : "Intervention failed.");
-          }
-        })();
+          });
       }}
     >
       {Object.entries(truth.actors).map(([actorId, actor]) => (
@@ -103,7 +125,12 @@ export function GodInspector({ runId, onError }: GodInspectorProps) {
         />
         They can notice this
       </label>
-      <button type="submit" className="self-start rounded px-3 py-1 font-medium" style={chromeFill}>
+      <button
+        type="submit"
+        disabled={!canApply}
+        className="self-start rounded px-3 py-1 font-medium disabled:opacity-50"
+        style={chromeFill}
+      >
         Apply
       </button>
     </form>
