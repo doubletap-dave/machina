@@ -20,7 +20,9 @@
         "x": 0,
         "y": 0
       },
-      "config": {}
+      "config": {
+        "statement": "Contest the canal and secure the Union's landward approaches."
+      }
     },
     {
       "id": "vesper-union-memory",

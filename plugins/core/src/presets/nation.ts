@@ -36,6 +36,7 @@ function node(
 function cabinetSubgraph(
   actorId: string,
   graphId: string,
+  name: string,
   agents: { id: string; name: string; position: { x: number; y: number } }[],
 ): { subgraph: GraphDocument; crossEdges: MachinaEdge[] } {
   const personalityId = uid("personality");
@@ -45,7 +46,12 @@ function cabinetSubgraph(
 
   const subgraphNodes: MachinaNode[] = [
     node(personalityId, "cognition.personality", {}, pos(0, 0)),
-    node(goalId, "cognition.goal", {}, pos(0, 80)),
+    node(
+      goalId,
+      "cognition.goal",
+      { statement: `Protect ${name}'s security and standing.` },
+      pos(0, 80),
+    ),
     node(memoryId, "cognition.memory", {}, pos(0, 160)),
     node(perceptionId, "perception.perception", {}, pos(0, 240)),
     ...agents.map((a) =>
@@ -89,7 +95,7 @@ export function nationPreset(name: string): Preset {
   const actor = node(actorId, "entities.actor", { name }, pos(0, 0));
   actor.subgraphId = subgraphId;
 
-  const { subgraph, crossEdges } = cabinetSubgraph(actorId, subgraphId, [
+  const { subgraph, crossEdges } = cabinetSubgraph(actorId, subgraphId, name, [
     { id: leaderId, name: "Leader", position: pos(200, 0) },
     { id: advisorId, name: "Advisor", position: pos(200, 80) },
   ]);
@@ -118,7 +124,7 @@ export function cabinetPreset(name: string): Preset {
   const actor = node(actorId, "entities.actor", { name }, pos(0, 0));
   actor.subgraphId = subgraphId;
 
-  const { subgraph, crossEdges } = cabinetSubgraph(actorId, subgraphId, [
+  const { subgraph, crossEdges } = cabinetSubgraph(actorId, subgraphId, name, [
     { id: leaderId, name: "Leader", position: pos(200, 0) },
     { id: advisorId, name: "Advisor", position: pos(200, 80) },
   ]);
@@ -146,7 +152,7 @@ export function agencyPreset(name: string): Preset {
   const actor = node(actorId, "entities.actor", { name }, pos(0, 0));
   actor.subgraphId = subgraphId;
 
-  const { subgraph, crossEdges } = cabinetSubgraph(actorId, subgraphId, [
+  const { subgraph, crossEdges } = cabinetSubgraph(actorId, subgraphId, name, [
     { id: agentId, name: "Agent", position: pos(200, 0) },
   ]);
 

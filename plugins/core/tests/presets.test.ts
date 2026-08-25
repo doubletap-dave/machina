@@ -3,7 +3,13 @@ import { createRegistry } from "@machina/node-sdk";
 import { registerCoreKinds } from "@machina/plugin-core";
 import { compile } from "@machina/graph";
 import type { MachinaProject, MachinaEdge, MachinaNode } from "@machina/core";
-import { nationPreset, type Preset } from "../src/presets/index.ts";
+import {
+  agencyPreset,
+  cabinetPreset,
+  listBuiltinPresets,
+  nationPreset,
+  type Preset,
+} from "../src/presets/index.ts";
 
 function registry() {
   const r = createRegistry();
@@ -147,6 +153,58 @@ describe("nationPreset", () => {
       expect(result.plan.systems.some((s) => s.kind === "systems.system")).toBe(
         true,
       );
+    }
+  });
+
+  it("gives every goal a non-blank statement", () => {
+    const presets = [
+      nationPreset("Atlantic Federation"),
+      cabinetPreset("Example Cabinet"),
+      agencyPreset("Example Agency"),
+    ];
+    for (const preset of presets) {
+      const goals = nodesByKind(preset, "cognition.goal");
+      expect(goals.length).toBeGreaterThan(0);
+      for (const goal of goals) {
+        const statement = String(
+          (goal.config as { statement?: string }).statement ?? "",
+        ).trim();
+        expect(statement.length).toBeGreaterThan(0);
+      }
+    }
+  });
+});
+
+describe("listBuiltinPresets", () => {
+  it("compiles each builtin preset with a clock", () => {
+    for (const preset of listBuiltinPresets()) {
+      const actor = preset.graph.nodes.find((n) => n.kind === "entities.actor");
+      if (!actor) throw new Error(`preset ${preset.name} missing actor`);
+      const result = compile(
+        {
+          schemaVersion: 1,
+          id: "p",
+          name: preset.name,
+          entryGraphId: "g",
+          presetRefs: [preset.id],
+          graphs: [
+            {
+              id: "g",
+              nodes: [
+                node("clock", "control.clock", { period: "month" }),
+                actor,
+              ],
+              edges: [
+                edge("clock", "tick", actor.id, "tick"),
+                ...preset.graph.edges,
+              ],
+            },
+            ...preset.extraGraphs,
+          ],
+        },
+        registry(),
+      );
+      expect("plan" in result, preset.name).toBe(true);
     }
   });
 });

@@ -20,7 +20,9 @@
         "x": 0,
         "y": 0
       },
-      "config": {}
+      "config": {
+        "statement": "Hold the canal and keep the Atlantic alliance intact."
+      }
     },
     {
       "id": "atlantic-federation-memory",
