@@ -41,8 +41,9 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | 2b RUN instrumentation | ✅ Merged | `lane/2b-run` @ `d98301f` | 12/12 sim · 10/10 studio · 7/7 runtime |
 | **3 Dead Channel Lite** | **✅ Done** | **`master` @ `993fef8`** | **77/77 (`pnpm test`)** |
 | Studio canvas-ops | ⏳ In progress | `master` @ `71704b3` | 81/81 (`@machina/studio`) |
+| Studio port-language | ✅ Done | `master` @ `ba311ca` | 9/9 (`@machina/ui`) · 89/89 (`@machina/studio`) |
 
-Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md`
+Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md`
 
 ---
 
@@ -87,7 +88,7 @@ packages/core/src/
 packages/node-sdk/src/
   define-node.ts index.ts
 packages/ui/src/
-  english.ts tokens.ts index.ts
+  english.ts tokens.ts port-language.ts index.ts
 plugins/core/src/
   index.ts presets/ kinds/
 packages/graph/           # Lane 1a ✅ — compile.ts; Lane 2a ✅ — compose.ts
@@ -99,6 +100,7 @@ packages/engine/          # openEngine, openEngineFromProject — in-process wor
 packages/client/          # MachinaClient — browser-safe HTTP + WebSocket wrapper
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
                           # canvas-ops — src/canvas/; lib/undo-stack.ts, lib/graph-edit.ts
+                          # port-language — src/canvas/port-symbol.tsx; connect-highlight.ts
 apps/runtime/             # HTTP/CLI drive @machina/engine (app.ts, serve.ts, run-project.ts, cli.ts)
 apps/runtime/src/instrumentation.ts  # Lane 2b ✅ — toWs bridge
 examples/dead-channel-lite/ # Wave 3 ✅ — two nations, 20-turn proof
@@ -119,7 +121,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/plugin-core`:** `registerCoreKinds`, 14 kinds v1, `nationPreset`, `cabinetPreset`, `agencyPreset`, `listBuiltinPresets`, `Preset`
 
-**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`, `fontMono`, `animationDelayMs`
+**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`, `fontMono`, `animationDelayMs`, `PORT_LANGUAGE`, `portLanguage`
 
 **`@machina/simulation`:** `createRng`, `createKernel`, `createKernelFromPlan`, `actorIdsFromPlan`, `Kernel`, `ThinkFn`, `InstrumentMsg` — **`TrueWorldState` is internal only**
 
