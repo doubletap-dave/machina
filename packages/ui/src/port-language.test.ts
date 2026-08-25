@@ -34,6 +34,22 @@ const SPEC_COLORS: Record<PortType, string> = {
   ACTOR_REF: "#d6b48a",
 };
 
+const SPEC_SYMBOLS: Record<PortType, string> = {
+  CLOCK: "disk",
+  OBSERVATION: "ring",
+  ACTION: "triangle",
+  EVENT: "plus",
+  MESSAGE: "chevron",
+  RESOURCE: "square",
+  PERSONALITY: "hex",
+  GOAL: "diamond",
+  MEMORY: "bar",
+  RELATIONSHIP: "double-ring",
+  SIGNAL: "wedge",
+  WORLD_STATE: "square-ring",
+  ACTOR_REF: "notch",
+};
+
 describe("PORT_LANGUAGE", () => {
   it("has exactly the PortTypes from core", () => {
     expect(Object.keys(PORT_LANGUAGE).sort()).toEqual([...CORE_PORT_TYPES].sort());
@@ -43,13 +59,19 @@ describe("PORT_LANGUAGE", () => {
     expect(portLanguage("CLOCK").color).toBe("#e4b84a");
   });
 
-  it("looks up OBSERVATION eye", () => {
-    expect(portLanguage("OBSERVATION").symbol).toBe("eye");
+  it("looks up OBSERVATION ring", () => {
+    expect(portLanguage("OBSERVATION").symbol).toBe("ring");
   });
 
   it("matches the spec color table exactly", () => {
     for (const type of CORE_PORT_TYPES) {
       expect(portLanguage(type).color).toBe(SPEC_COLORS[type]);
+    }
+  });
+
+  it("matches the spec geometric symbol table exactly", () => {
+    for (const type of CORE_PORT_TYPES) {
+      expect(portLanguage(type).symbol).toBe(SPEC_SYMBOLS[type]);
     }
   });
 });

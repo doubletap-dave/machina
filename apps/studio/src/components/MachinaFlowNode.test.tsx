@@ -1,4 +1,4 @@
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { ReactFlowProvider, type NodeProps } from "@xyflow/react";
 import type { PortDef } from "@machina/core";
@@ -13,7 +13,7 @@ const observationIn: PortDef = {
   dir: "in",
   type: "OBSERVATION",
   cardinality: "fan-in",
-  label: "Seen",
+  label: "Observation",
 };
 
 function renderFlowNode(ports: Record<string, PortDef>) {
@@ -45,6 +45,7 @@ describe("MachinaFlowNode handles", () => {
     expect(handle).toHaveAttribute("title", "Observation");
     expect(handle).toHaveAttribute("aria-label", "Observation");
     expect(handle).toHaveStyle({ backgroundColor: "#4ec4d9", borderColor: "#4ec4d9" });
-    expect(handle?.querySelector("svg")).toBeTruthy();
+    expect(handle?.querySelector('[data-port-symbol="ring"]')).toBeTruthy();
+    expect(screen.getByText("Observation")).toBeTruthy();
   });
 });
