@@ -21,5 +21,18 @@ describe("kernel instrumentation", () => {
     await kernel.runTurn();
 
     expect(onInstrument).toHaveBeenCalledWith({ type: "turn", turn: 1 });
+    expect(onInstrument).toHaveBeenCalledWith({ type: "node-active", nodeId: "a" });
+    expect(onInstrument).toHaveBeenCalledWith({
+      type: "edge-pulse",
+      from: "a",
+      to: "a",
+      portType: "OBSERVATION",
+    });
+    expect(onInstrument).toHaveBeenCalledWith({
+      type: "edge-pulse",
+      from: "a",
+      to: "a",
+      portType: "ACTION",
+    });
   });
 });

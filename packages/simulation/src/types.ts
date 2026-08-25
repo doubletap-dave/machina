@@ -16,5 +16,6 @@ export type Kernel = {
   applyIntervention(payload: { path: string; value: unknown; noticeable: boolean }): void;
   rewind(turn: number): void;
   getTruth(): TrueWorldState;
+  peekPacket(actorId: string): ObservationPacket;
   paused: boolean;
 };

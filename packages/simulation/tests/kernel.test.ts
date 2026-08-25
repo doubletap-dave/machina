@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ObservationPacket } from "@machina/core";
+import type { InstrumentMsg, ObservationPacket } from "@machina/core";
 import { createKernel, type ThinkFn } from "../src/index.ts";
 
 const waitThink: ThinkFn = async ({ nodeId }) => ({
@@ -105,6 +105,34 @@ describe("createKernel", () => {
     const typed: ObservationPacket = packet!;
     expect(typed.legalActions).toEqual(["wait", "signal"]);
     expect(typed.observations.length).toBeGreaterThan(0);
+  });
+
+  it("peekPacket matches think packet shape and has no truth field", async () => {
+    const msgs: InstrumentMsg[] = [];
+    const kernel = createKernel({
+      seed: 1,
+      actorIds: ["a"],
+      onInstrument: (m) => msgs.push(m),
+      think: async ({ packet }) => ({ actorId: packet.actorId, type: "wait", params: {} }),
+    });
+    const peeked = kernel.peekPacket("a");
+    expect(peeked.actorId).toBe("a");
+    expect(peeked.legalActions.length).toBeGreaterThan(0);
+    expect(JSON.stringify(peeked)).not.toContain("TrueWorldState");
+    expect(kernel.getTruth().turn).toBe(0);
+    await kernel.runTurn();
+    expect(msgs.some((m) => m.type === "turn")).toBe(true);
+    expect(msgs.some((m) => m.type === "node-active")).toBe(true);
+    expect(msgs.some((m) => m.type === "edge-pulse")).toBe(true);
+    expect(msgs.some((m) => m.type === "edge-pulse" && m.portType === "OBSERVATION")).toBe(
+      true,
+    );
+    expect(msgs.some((m) => m.type === "edge-pulse" && m.portType === "ACTION")).toBe(true);
+  });
+
+  it("peekPacket rejects unknown actors in English", () => {
+    const kernel = createKernel({ seed: 1, actorIds: ["a"], think: waitThink });
+    expect(() => kernel.peekPacket("ghost")).toThrow("Unknown actor: ghost");
   });
 });
 

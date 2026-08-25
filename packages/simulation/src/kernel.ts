@@ -1,4 +1,4 @@
-import type { MachinaEvent } from "@machina/core";
+import type { MachinaEvent, ObservationPacket } from "@machina/core";
 import type { InstrumentMsg } from "./instrument.ts";
 import { createRng } from "./rng.ts";
 import type { Kernel, ThinkFn, TrueWorldState } from "./types.ts";
@@ -33,7 +33,11 @@ function applyPath(state: TrueWorldState, path: string, value: unknown): void {
   actor.resources[resource] = value as number;
 }
 
-function buildPacket(state: TrueWorldState, actorId: string, rng: { next(): number }) {
+function buildPacket(
+  state: TrueWorldState,
+  actorId: string,
+  rng: { next(): number },
+): ObservationPacket {
   const noise = rng.next() > 0.5 ? 7 : -7;
   return {
     actorId,
@@ -87,6 +91,13 @@ export function createKernel(opts: {
       return cloneState(state);
     },
 
+    peekPacket(actorId) {
+      if (!(actorId in state.actors)) {
+        throw new Error(`Unknown actor: ${actorId}`);
+      }
+      return buildPacket(state, actorId, rng);
+    },
+
     rewind(turn) {
       const snapshot = snapshots.get(turn);
       if (!snapshot) {
@@ -124,8 +135,21 @@ export function createKernel(opts: {
       events.push(nextEvent(state.turn, "tick", {}));
 
       for (const actorId of opts.actorIds) {
+        opts.onInstrument?.({ type: "node-active", nodeId: actorId });
+        opts.onInstrument?.({
+          type: "edge-pulse",
+          from: actorId,
+          to: actorId,
+          portType: "OBSERVATION",
+        });
         const packet = buildPacket(state, actorId, rng);
         const action = await opts.think({ nodeId: actorId, packet });
+        opts.onInstrument?.({
+          type: "edge-pulse",
+          from: actorId,
+          to: actorId,
+          portType: "ACTION",
+        });
         events.push(nextEvent(state.turn, "action", action));
       }
 
