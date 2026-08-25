@@ -7,13 +7,16 @@ import {
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
+  useNodesInitialized,
+  useReactFlow,
   type Connection,
   type Edge,
   type Node,
+  type NodeChange,
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { MachinaNode } from "@machina/core";
 import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
 import { MachinaFlowNode } from "./MachinaFlowNode";
@@ -28,18 +31,37 @@ export function Canvas({ onEdgeError }: CanvasProps) {
   const store = useProjectSnapshot();
   const registry = useRegistry();
   const graph = store.getCurrentGraph();
+  const currentGraphId = store.getCurrentGraphId();
+  const nodesInitialized = useNodesInitialized();
+  const reactFlow = useReactFlow();
+  const fitViewRef = useRef(reactFlow.fitView);
+  const fittedGraphIdRef = useRef<string | null>(null);
+  fitViewRef.current = reactFlow.fitView;
+
+  useEffect(() => {
+    if (!nodesInitialized || fittedGraphIdRef.current === currentGraphId) {
+      return;
+    }
+    fittedGraphIdRef.current = currentGraphId;
+    fitViewRef.current();
+  }, [currentGraphId, nodesInitialized]);
 
   const flowNodes: Node[] = useMemo(
     () =>
       graph.nodes.map((node) => {
         const def = registry.getOrThrow(node.kind, node.version);
+        const config = node.config as Record<string, string | undefined>;
+        const label =
+          node.kind === "entities.actor" && config.name
+            ? String(config.name)
+            : def.metadata.name;
         return {
           id: node.id,
           type: "machina",
           position: node.position,
           selected: store.getSelectedNodeId() === node.id,
           data: {
-            label: def.metadata.name,
+            label,
             ports: def.ports,
           },
         };
@@ -88,9 +110,20 @@ export function Canvas({ onEdgeError }: CanvasProps) {
     store.selectNode(null);
   }, [store]);
 
-  const onNodeDragStop = useCallback(
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      for (const change of changes) {
+        if (change.type === "position" && change.position && change.id) {
+          store.setNodePosition(change.id, change.position);
+        }
+      }
+    },
+    [store],
+  );
+
+  const onNodeDoubleClick = useCallback(
     (_: unknown, node: Node) => {
-      store.setNodePosition(node.id, node.position);
+      store.enterSubgraph(node.id);
     },
     [store],
   );
@@ -103,9 +136,9 @@ export function Canvas({ onEdgeError }: CanvasProps) {
         nodeTypes={nodeTypes}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onNodeDoubleClick={onNodeDoubleClick}
         onPaneClick={onPaneClick}
-        onNodeDragStop={onNodeDragStop}
-        fitView
+        onNodesChange={onNodesChange}
         colorMode="dark"
       >
         <Background gap={16} color="#1a1a1a" />

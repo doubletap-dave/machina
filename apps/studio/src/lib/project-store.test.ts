@@ -99,4 +99,19 @@ describe("createProjectStore", () => {
     expect(store.getProject().name).toBe("New World");
     expect(store.getCurrentGraph().nodes.some((node) => node.kind === "control.clock")).toBe(true);
   });
+
+  it("setNodePosition updates the node during repeated calls", () => {
+    const store = createProjectStore(testRegistry());
+    const node = store.addNode("cognition.personality", { x: 0, y: 0 });
+    store.setNodePosition(node.id, { x: 40, y: 80 });
+    expect(store.getCurrentGraph().nodes.find((n) => n.id === node.id)?.position).toEqual({
+      x: 40,
+      y: 80,
+    });
+    store.setNodePosition(node.id, { x: 120, y: 200 });
+    expect(store.getCurrentGraph().nodes.find((n) => n.id === node.id)?.position).toEqual({
+      x: 120,
+      y: 200,
+    });
+  });
 });

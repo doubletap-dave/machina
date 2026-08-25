@@ -204,11 +204,14 @@ export function createProjectStore(registry: NodeRegistry) {
     },
 
     setNodePosition(nodeId: string, position: { x: number; y: number }): void {
-      const node = findNode(currentGraph(), nodeId);
+      const graph = currentGraph();
+      const node = findNode(graph, nodeId);
       if (!node) {
         return;
       }
-      node.position = position;
+      graph.nodes = graph.nodes.map((candidate) =>
+        candidate.id === nodeId ? { ...candidate, position } : candidate,
+      );
       emit();
     },
   };
