@@ -95,6 +95,7 @@ packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.
 packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
 packages/engine/          # openEngine, openEngineFromProject — in-process world runner
+packages/client/          # MachinaClient — browser-safe HTTP + WebSocket wrapper
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
 apps/runtime/             # HTTP/CLI drive @machina/engine (app.ts, serve.ts, run-project.ts, cli.ts)
 apps/runtime/src/instrumentation.ts  # Lane 2b ✅ — toWs bridge
@@ -126,6 +127,8 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`
 
+**`@machina/client`:** `MachinaClient`, `CompileOutcome` (local; do not import `@machina/engine`)
+
 **`@machina/runtime`:** `createApp`, `runCli`, `runProjectHeadless`, WebSocket on `/ws`, CLI `machina run <dir> --turns N` · `machina test`
 
 ---
@@ -140,6 +143,7 @@ pnpm dev:studio                        # Studio only
 pnpm dev:runtime                       # Runtime API only
 pnpm test                              # 77/77 automated tests
 pnpm --filter @machina/engine test     # 5/5 in-process engine
+pnpm --filter @machina/client test     # HTTP + WS wrapper against runtime listen(0)
 
 # Add a dependency to a package (example)
 cd packages/graph
@@ -201,7 +205,7 @@ pnpm install
 
 ## Package names
 
-`@machina/core` · `@machina/node-sdk` · `@machina/ui` · `@machina/graph` · `@machina/simulation` · `@machina/agents` · `@machina/persistence` · `@machina/engine` · `@machina/plugin-core` · `@machina/studio` · `@machina/runtime`
+`@machina/core` · `@machina/node-sdk` · `@machina/ui` · `@machina/graph` · `@machina/simulation` · `@machina/agents` · `@machina/persistence` · `@machina/engine` · `@machina/client` · `@machina/plugin-core` · `@machina/studio` · `@machina/runtime`
 
 ---
 

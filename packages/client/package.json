@@ -1,0 +1,22 @@
+{
+  "name": "@machina/client",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@machina/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@machina/engine": "workspace:^",
+    "@machina/graph": "workspace:^",
+    "@machina/node-sdk": "workspace:^",
+    "@machina/plugin-core": "workspace:^",
+    "@machina/runtime": "workspace:^",
+    "vitest": "^3.0.5"
+  }
+}

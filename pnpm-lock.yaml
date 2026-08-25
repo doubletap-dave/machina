@@ -138,6 +138,31 @@ importers:
         specifier: ^4.1.11
         version: 4.1.11(@types/node@26.3.0)(jsdom@30.0.1)(vite@7.3.6(@types/node@26.3.0)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.23.12))
 
+  packages/client:
+    dependencies:
+      '@machina/core':
+        specifier: workspace:^
+        version: link:../core
+    devDependencies:
+      '@machina/engine':
+        specifier: workspace:^
+        version: link:../engine
+      '@machina/graph':
+        specifier: workspace:^
+        version: link:../graph
+      '@machina/node-sdk':
+        specifier: workspace:^
+        version: link:../node-sdk
+      '@machina/plugin-core':
+        specifier: workspace:^
+        version: link:../../plugins/core
+      '@machina/runtime':
+        specifier: workspace:^
+        version: link:../../apps/runtime
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.7(@types/node@26.3.0)(jiti@2.7.0)(jsdom@30.0.1)(lightningcss@1.32.0)(tsx@4.23.12)
+
   packages/core: {}
 
   packages/engine:
