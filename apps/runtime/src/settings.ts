@@ -73,11 +73,16 @@ function sliceFor(
   return publicProviderView(file.providers[id]);
 }
 
-export function createSettingsHandler(
-  deps: SettingsDeps,
-): (req: IncomingMessage, res: ServerResponse) => Promise<boolean> {
+export type SettingsHandler = {
+  handle: (req: IncomingMessage, res: ServerResponse) => Promise<boolean>;
+  providerView: (id: ProviderId, file: CredentialsFile) => PublicProviderView;
+};
+
+export function createSettingsHandler(deps: SettingsDeps): SettingsHandler {
   const credOpts = { homedir: deps.homedir };
   const memory: Partial<Record<ProviderId, EnvCache>> = {};
+  const providerView = (id: ProviderId, file: CredentialsFile): PublicProviderView =>
+    sliceFor(id, file, deps.env, memory);
 
   async function applyList(
     id: ProviderId,
@@ -112,7 +117,7 @@ export function createSettingsHandler(
     return slice;
   }
 
-  return async (req, res) => {
+  const handle = async (req: IncomingMessage, res: ServerResponse): Promise<boolean> => {
     const method = req.method ?? "GET";
     const path = (req.url ?? "/").split("?")[0] ?? "/";
     if (!path.startsWith("/settings")) {
@@ -125,7 +130,7 @@ export function createSettingsHandler(
     if (method === "GET" && path === "/settings/models") {
       const providers: Record<string, PublicProviderView> = {};
       for (const id of PROVIDER_IDS) {
-        providers[id] = sliceFor(id, file, deps.env, memory);
+        providers[id] = providerView(id, file);
       }
       const body: {
         default: CredentialsFile["default"];
@@ -151,7 +156,7 @@ export function createSettingsHandler(
         return true;
       }
       const model = body.model;
-      const view = sliceFor(providerRaw, file, deps.env, memory);
+      const view = providerView(providerRaw, file);
       if (!view.verified) {
         sendJson(res, 400, { message: "That provider is not verified." });
         return true;
@@ -227,4 +232,6 @@ export function createSettingsHandler(
     sendJson(res, 404, { message: "Not found." });
     return true;
   };
+
+  return { handle, providerView };
 }

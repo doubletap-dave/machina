@@ -8,7 +8,10 @@ import {
   apiKeyFromEnv,
   langchainInvokeChat,
   loadCredentials,
+  type CredentialsFile,
   type InvokeChat,
+  type ProviderId,
+  type PublicProviderView,
 } from "@machina/engine";
 import { composeFromDescription } from "@machina/graph";
 import { createRegistry, type NodeRegistry } from "@machina/node-sdk";
@@ -24,6 +27,7 @@ export type ComposeDeps = {
   env?: NodeJS.Dict<string>;
   invokeChat?: InvokeChat;
   registry?: NodeRegistry;
+  providerView: (id: ProviderId, file: CredentialsFile) => PublicProviderView;
 };
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
@@ -98,8 +102,8 @@ export async function handleCompose(
   const apiKey =
     file.providers[file.default.provider]?.apiKey ??
     apiKeyFromEnv(file.default.provider, env);
-  const verifiedAt = file.providers[file.default.provider]?.verifiedAt ?? null;
-  if (!apiKey || verifiedAt === null) {
+  const view = deps.providerView(file.default.provider, file);
+  if (!apiKey || !view.verified) {
     sendJson(res, 400, { message: describeNoLlmCopy() });
     return;
   }

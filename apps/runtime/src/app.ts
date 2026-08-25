@@ -59,7 +59,7 @@ function runPath(url: string): { runId: string; action: string } | null {
 
 export function createApp(deps: RuntimeDeps): RuntimeApp {
   const runs = new Map<string, RunRecord>();
-  const handleSettings = createSettingsHandler({
+  const settings = createSettingsHandler({
     homedir: deps.homedir,
     fetchImpl: deps.fetch ?? globalThis.fetch,
     env: deps.env ?? process.env,
@@ -70,7 +70,7 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
     const url = req.url ?? "/";
 
     try {
-      if (await handleSettings(req, res)) {
+      if (await settings.handle(req, res)) {
         return;
       }
 
@@ -90,6 +90,7 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
           homedir: deps.homedir,
           env: deps.env ?? process.env,
           invokeChat: deps.invokeChat,
+          providerView: settings.providerView,
         });
         return;
       }

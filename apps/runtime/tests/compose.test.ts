@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { describeNoLlmCopy, type MachinaProject } from "@machina/core";
-import { credentialsPath, type InvokeChat } from "@machina/engine";
+import { credentialsPath, loadCredentials, type InvokeChat } from "@machina/engine";
 import { createApp, type RuntimeDeps } from "../src/app.ts";
 
 const withClock: MachinaProject = {
@@ -57,12 +57,13 @@ async function tempHome(): Promise<string> {
 function deps(opts: {
   homedir: string;
   invokeChat?: InvokeChat;
+  env?: NodeJS.Dict<string>;
 }): RuntimeDeps {
   return {
     compile: () => ({ errors: [] as [], plan }),
     homedir: opts.homedir,
     fetch: stubFetch(200, { data: [{ id: "gpt-4o" }] }),
-    env: {},
+    env: opts.env ?? {},
     invokeChat: opts.invokeChat,
   };
 }
@@ -142,5 +143,46 @@ describe("POST /compose", () => {
       expect(args.prompt).toContain("control.clock");
       expect(args.prompt).toContain("a clock");
     });
+  });
+
+  it("allows compose when an env key is verified without file verifiedAt", async () => {
+    const homedir = await tempHome();
+    const invokeChat = vi.fn(async () => JSON.stringify(withClock));
+    await withServer(
+      deps({ homedir, invokeChat, env: { OPENAI_API_KEY: "sk-env-abcd" } }),
+      async (base) => {
+        const refresh = await fetch(`${base}/settings/providers/openai/refresh`, {
+          method: "POST",
+        });
+        expect(refresh.status).toBe(200);
+        const setDefault = await fetch(`${base}/settings/default`, {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ provider: "openai", model: "gpt-4o" }),
+        });
+        expect(setDefault.status).toBe(200);
+
+        const models = await fetch(`${base}/settings/models`);
+        const settings = (await models.json()) as {
+          providers: { openai: { verified: boolean } };
+        };
+        expect(settings.providers.openai.verified).toBe(true);
+
+        const loaded = await loadCredentials({ homedir });
+        expect(loaded.file.providers.openai?.verifiedAt ?? null).toBeNull();
+
+        const response = await fetch(`${base}/compose`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ prompt: "a clock", project: withClock }),
+        });
+        expect(response.status).toBe(200);
+        const body = (await response.json()) as { project?: MachinaProject };
+        expect(body.project?.graphs[0]?.nodes.some((node) => node.kind === "control.clock")).toBe(
+          true,
+        );
+        expect(invokeChat).toHaveBeenCalled();
+      },
+    );
   });
 });
