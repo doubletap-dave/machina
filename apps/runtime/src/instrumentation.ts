@@ -1,4 +1,4 @@
-import type { InstrumentMsg } from "../../../packages/simulation/src/instrument.ts";
+import type { InstrumentMsg } from "@machina/core";
 
 export type WsInstrumentPayload = InstrumentMsg;
 

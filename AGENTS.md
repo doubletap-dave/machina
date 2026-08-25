@@ -82,7 +82,7 @@ vitest.workspace.ts       # TODO: migrate to vitest.config.ts test.projects (Vit
 .nvmrc                    # 22
 
 packages/core/src/
-  ports.ts errors.ts match-ports.ts ir.ts plan.ts events.ts packets.ts index.ts
+  ports.ts errors.ts match-ports.ts ir.ts plan.ts events.ts packets.ts instrument.ts index.ts
 packages/node-sdk/src/
   define-node.ts index.ts
 packages/ui/src/
@@ -107,7 +107,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 ## Frozen exports (Wave 0 — do not rename)
 
-**`@machina/core`:** `PortType`, `PortDef`, `Cardinality`, `MachinaError`, `machinaError`, `matchPorts`, `MachinaProject`, `GraphDocument`, `MachinaNode`, `MachinaEdge`, `Wire`, `SimulationPlan`, `ObservationPacket`, `MachinaEvent`, `AgentAction`, `stripPositions`
+**`@machina/core`:** `PortType`, `PortDef`, `Cardinality`, `MachinaError`, `machinaError`, `matchPorts`, `MachinaProject`, `GraphDocument`, `MachinaNode`, `MachinaEdge`, `Wire`, `SimulationPlan`, `ObservationPacket`, `MachinaEvent`, `AgentAction`, `stripPositions`, `InstrumentMsg`
 
 **`@machina/node-sdk`:** `defineNode`, `NodeDefinition`, `NodeRegistry`, `createRegistry`
 

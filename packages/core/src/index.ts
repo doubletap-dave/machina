@@ -13,3 +13,4 @@ export { stripPositions } from "./ir.ts";
 export type { SimulationPlan } from "./plan.ts";
 export type { ObservationPacket, AgentAction } from "./packets.ts";
 export type { MachinaEvent } from "./events.ts";
+export type { InstrumentMsg } from "./instrument.ts";
