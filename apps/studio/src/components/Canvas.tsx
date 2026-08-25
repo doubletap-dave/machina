@@ -140,6 +140,7 @@ export function Canvas({
         onPaneContextMenu={onPaneContextMenu}
         snapToGrid
         snapGrid={[16, 16]}
+        edgesReconnectable
         proOptions={{ hideAttribution: true }}
         deleteKeyCode={null}
         connectionRadius={20}

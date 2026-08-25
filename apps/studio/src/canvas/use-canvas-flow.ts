@@ -15,6 +15,7 @@ import {
 import type { NodeRegistry } from "@machina/node-sdk";
 import type { ProjectStore } from "@/lib/project-store.ts";
 import { kindFromDrop } from "./dnd.ts";
+import { shouldSkipEcho } from "./flow-echo.ts";
 import { toFlowEdges, toFlowNodes } from "./flow-elements.ts";
 import { graphFromFlow, snapPosition } from "./flow-sync.ts";
 import { nodeChangeOps, removedIds } from "./selection-delete.ts";
@@ -34,7 +35,7 @@ export function useCanvasFlow({ store, registry, onEdgeError }: CanvasFlowOpts) 
   const currentGraphId = store.getCurrentGraphId();
   const revision = store.getRevision();
   const reactFlow = useReactFlow();
-  const echoRef = useRef(false);
+  const echoRevisionRef = useRef<number | null>(null);
   const graphIdRef = useRef(currentGraphId);
 
   const [nodes, setNodes] = useNodesState(toFlowNodes(graph.nodes, registry, new Set()));
@@ -45,8 +46,7 @@ export function useCanvasFlow({ store, registry, onEdgeError }: CanvasFlowOpts) 
   edgesRef.current = edges;
 
   useEffect(() => {
-    if (echoRef.current) {
-      echoRef.current = false;
+    if (shouldSkipEcho(revision, echoRevisionRef.current)) {
       return;
     }
     const current = store.getCurrentGraph();
@@ -63,9 +63,6 @@ export function useCanvasFlow({ store, registry, onEdgeError }: CanvasFlowOpts) 
       const ops = nodeChangeOps(changes);
       const removed = removedIds(changes);
       const hasPosition = changes.some((change) => change.type === "position");
-      if (hasPosition || removed.length > 0 || ops.some((op) => op.op === "select")) {
-        echoRef.current = true;
-      }
       for (const op of ops) {
         if (op.op === "beginDrag") {
           store.beginDrag(op.id);
@@ -78,16 +75,19 @@ export function useCanvasFlow({ store, registry, onEdgeError }: CanvasFlowOpts) 
       });
       if (hasPosition && nextNodes) {
         store.writeGraph(graphFromFlow(nextNodes, edgesRef.current, store.getCurrentGraph()));
+        echoRevisionRef.current = store.getRevision();
       }
       for (const op of ops) {
         if (op.op === "endDrag") {
           store.endDrag();
         } else if (op.op === "select" && op.selected) {
           store.selectNode(op.id);
+          echoRevisionRef.current = store.getRevision();
         }
       }
       if (removed.length > 0) {
         store.deleteNodes(removed);
+        echoRevisionRef.current = store.getRevision();
       }
     },
     [setNodes, store],
@@ -97,8 +97,8 @@ export function useCanvasFlow({ store, registry, onEdgeError }: CanvasFlowOpts) 
     (changes: EdgeChange[]) => {
       const ids = removedIds(changes);
       if (ids.length > 0) {
-        echoRef.current = true;
         store.deleteEdges(ids);
+        echoRevisionRef.current = store.getRevision();
       }
       setEdges((current) => applyEdgeChanges(changes, current));
     },
@@ -120,7 +120,7 @@ export function useCanvasFlow({ store, registry, onEdgeError }: CanvasFlowOpts) 
         onEdgeError(err.message);
         return;
       }
-      echoRef.current = true;
+      echoRevisionRef.current = store.getRevision();
       const created = store.getCurrentGraph().edges.at(-1);
       setEdges((current) => addEdge({ ...connection, id: created?.id }, current));
     },
@@ -137,7 +137,6 @@ export function useCanvasFlow({ store, registry, onEdgeError }: CanvasFlowOpts) 
       ) {
         return;
       }
-      echoRef.current = true;
       let nextEdges: typeof edgesRef.current | undefined;
       setEdges((current) => {
         nextEdges = reconnectEdge(oldEdge, newConnection, current);
@@ -145,6 +144,7 @@ export function useCanvasFlow({ store, registry, onEdgeError }: CanvasFlowOpts) 
       });
       if (nextEdges) {
         store.writeGraph(graphFromFlow(nodesRef.current, nextEdges, store.getCurrentGraph()));
+        echoRevisionRef.current = store.getRevision();
       }
     },
     [setEdges, store],
@@ -157,11 +157,11 @@ export function useCanvasFlow({ store, registry, onEdgeError }: CanvasFlowOpts) 
       if (!kind) {
         return;
       }
-      echoRef.current = true;
       const pos = snapPosition(
         reactFlow.screenToFlowPosition({ x: event.clientX, y: event.clientY }),
       );
       store.addNode(kind, pos);
+      echoRevisionRef.current = store.getRevision();
       const current = store.getCurrentGraph();
       setNodes(toFlowNodes(current.nodes, registry, new Set(selectedIds(nodesRef.current))));
       setEdges(toFlowEdges(current.edges, current.nodes, registry, new Set(selectedIds(edgesRef.current))));
@@ -170,16 +170,16 @@ export function useCanvasFlow({ store, registry, onEdgeError }: CanvasFlowOpts) 
   );
 
   const clearSelection = useCallback(() => {
-    echoRef.current = true;
     store.selectNode(null);
+    echoRevisionRef.current = store.getRevision();
     setNodes((current) => current.map((node) => (node.selected ? { ...node, selected: false } : node)));
     setEdges((current) => current.map((edge) => (edge.selected ? { ...edge, selected: false } : edge)));
   }, [setEdges, setNodes, store]);
 
   const onMinimapNodeClick = useCallback(
     (_: unknown, node: { id: string }) => {
-      echoRef.current = true;
       store.selectNode(node.id);
+      echoRevisionRef.current = store.getRevision();
       setNodes((current) =>
         current.map((item) => ({ ...item, selected: item.id === node.id })),
       );
