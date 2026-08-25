@@ -40,8 +40,9 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | 2a Presets + LLM compose | ✅ Merged | `lane/2a-presets` @ `cfd00d3` | 4/4 plugin-core · 9/9 graph · 8/8 studio |
 | 2b RUN instrumentation | ✅ Merged | `lane/2b-run` @ `d98301f` | 12/12 sim · 10/10 studio · 7/7 runtime |
 | **3 Dead Channel Lite** | **✅ Done** | **`master` @ `993fef8`** | **77/77 (`pnpm test`)** |
+| Studio canvas-ops | ⏳ In progress | `master` @ `71704b3` | 81/81 (`@machina/studio`) |
 
-Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md`
+Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md`
 
 ---
 
@@ -97,6 +98,7 @@ packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
 packages/engine/          # openEngine, openEngineFromProject — in-process world runner
 packages/client/          # MachinaClient — browser-safe HTTP + WebSocket wrapper
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
+                          # canvas-ops — src/canvas/; lib/undo-stack.ts, lib/graph-edit.ts
 apps/runtime/             # HTTP/CLI drive @machina/engine (app.ts, serve.ts, run-project.ts, cli.ts)
 apps/runtime/src/instrumentation.ts  # Lane 2b ✅ — toWs bridge
 examples/dead-channel-lite/ # Wave 3 ✅ — two nations, 20-turn proof
