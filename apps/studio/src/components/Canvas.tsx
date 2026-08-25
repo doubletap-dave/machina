@@ -19,6 +19,13 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import type { MachinaNode } from "@machina/core";
+import {
+  ACTIVE_PORT_ATTR,
+  activeTypeFromConnection,
+  connectionLineStyleFor,
+  endConnectHighlight,
+  startConnectHighlight,
+} from "@/canvas/connect-highlight.ts";
 import { toFlowEdges, toFlowNodes } from "@/canvas/flow-elements.ts";
 import { isValidMachinaConnection } from "@/canvas/is-valid-connection.ts";
 import { minimapMaskColor, minimapNodeFill } from "@/canvas/minimap.ts";
@@ -67,12 +74,14 @@ export function Canvas({
   const currentGraphId = store.getCurrentGraphId();
   const nodesInitialized = useNodesInitialized();
   const reactFlow = useReactFlow();
+  const canvasRef = useRef<HTMLDivElement>(null);
   const fitViewRef = useRef(reactFlow.fitView);
   const fittedGraphIdRef = useRef<string | null>(null);
   const selectedNodeIdsRef = useRef(new Set<string>());
   const selectedEdgeIdsRef = useRef(new Set<string>());
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<Set<string>>(new Set());
+  const [activePortType, setActivePortType] = useState<string | undefined>();
   const [menu, setMenu] = useState<OpenMenu | null>(null);
   fitViewRef.current = reactFlow.fitView;
   selectedNodeIdsRef.current = selectedNodeIds;
@@ -148,6 +157,20 @@ export function Canvas({
       }),
     [graph.nodes, registry],
   );
+
+  const onConnectStart = useCallback(
+    (_: unknown, params: { nodeId: string | null; handleId: string | null }) => {
+      const type = activeTypeFromConnection(registry, graph.nodes, params.nodeId, params.handleId);
+      startConnectHighlight(canvasRef.current, type);
+      setActivePortType(type);
+    },
+    [graph.nodes, registry],
+  );
+
+  const onConnectEnd = useCallback(() => {
+    endConnectHighlight(canvasRef.current);
+    setActivePortType(undefined);
+  }, []);
 
   const onNodeClick = useCallback(
     (_: unknown, node: Node) => {
@@ -245,8 +268,10 @@ export function Canvas({
 
   return (
     <div
+      ref={canvasRef}
       className={skipAnimations ? "skip-animations h-full w-full" : "h-full w-full"}
       data-machina-canvas=""
+      {...(activePortType ? { [ACTIVE_PORT_ATTR]: activePortType } : {})}
       style={{
         background: `var(--machina-canvas-bg, ${canvasBg})`,
         ["--machina-anim-ms" as string]: `${animationDelayMs(skipAnimations)}ms`,
@@ -257,6 +282,9 @@ export function Canvas({
         edges={flowEdges}
         nodeTypes={nodeTypes}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
+        connectionLineStyle={connectionLineStyleFor(activePortType)}
         isValidConnection={isValidConnection}
         onNodeClick={onNodeClick}
         onNodeDoubleClick={onNodeDoubleClick}

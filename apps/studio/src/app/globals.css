@@ -28,3 +28,23 @@ body {
 .skip-animations .edge-pulse {
   animation: none;
 }
+
+[data-machina-canvas][data-active-port-type] [data-port-type] {
+  opacity: 0.35;
+}
+
+[data-machina-canvas][data-active-port-type="ACTOR_REF"] [data-port-type="ACTOR_REF"],
+[data-machina-canvas][data-active-port-type="WORLD_STATE"] [data-port-type="WORLD_STATE"],
+[data-machina-canvas][data-active-port-type="OBSERVATION"] [data-port-type="OBSERVATION"],
+[data-machina-canvas][data-active-port-type="ACTION"] [data-port-type="ACTION"],
+[data-machina-canvas][data-active-port-type="EVENT"] [data-port-type="EVENT"],
+[data-machina-canvas][data-active-port-type="RESOURCE"] [data-port-type="RESOURCE"],
+[data-machina-canvas][data-active-port-type="MESSAGE"] [data-port-type="MESSAGE"],
+[data-machina-canvas][data-active-port-type="RELATIONSHIP"] [data-port-type="RELATIONSHIP"],
+[data-machina-canvas][data-active-port-type="MEMORY"] [data-port-type="MEMORY"],
+[data-machina-canvas][data-active-port-type="SIGNAL"] [data-port-type="SIGNAL"],
+[data-machina-canvas][data-active-port-type="CLOCK"] [data-port-type="CLOCK"],
+[data-machina-canvas][data-active-port-type="PERSONALITY"] [data-port-type="PERSONALITY"],
+[data-machina-canvas][data-active-port-type="GOAL"] [data-port-type="GOAL"] {
+  opacity: 1;
+}
