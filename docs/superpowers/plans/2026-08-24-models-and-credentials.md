@@ -33,9 +33,9 @@
 
 Path `join(homedir(), ".machina", "credentials.json")`. `homedir` injectable. `publicProviderView` strips `apiKey`. `restrictToOwner` best-effort (chmod 0600; Windows ACL if easy, else chmod).
 
-- [ ] **Step 1: Tests** save/load round-trip; public view has no `apiKey`; corrupt JSON → `credentialsUnreadableCopy()`; `last4` of `sk-ant-1234abcd` is `abcd`.
+- [x] **Step 1: Tests** save/load round-trip; public view has no `apiKey`; corrupt JSON → `credentialsUnreadableCopy()`; `last4` of `sk-ant-1234abcd` is `abcd`.
 
-- [ ] **Step 2: Implement. PASS. Commit** `feat: add machine credential store for llm providers`
+- [x] **Step 2: Implement. PASS. Commit** `feat: add machine credential store for llm providers`
 
 ---
 

@@ -42,6 +42,7 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | **3 Dead Channel Lite** | **✅ Done** | **`master` @ `993fef8`** | **77/77 (`pnpm test`)** |
 | Studio canvas-ops | ⏳ In progress | `master` @ `71704b3` | 81/81 (`@machina/studio`) |
 | Studio port-language | ✅ Done | `master` @ `ba311ca` | 9/9 (`@machina/ui`) · 89/89 (`@machina/studio`) |
+| Studio models | ⏳ Task 1 | credentials + llm-english | 14/14 core · 13/13 engine |
 
 Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md`
 
@@ -84,7 +85,7 @@ vitest.workspace.ts       # TODO: migrate to vitest.config.ts test.projects (Vit
 .nvmrc                    # 22
 
 packages/core/src/
-  ports.ts errors.ts match-ports.ts ir.ts plan.ts events.ts packets.ts instrument.ts index.ts
+  ports.ts errors.ts match-ports.ts ir.ts plan.ts events.ts packets.ts instrument.ts llm-english.ts index.ts
 packages/node-sdk/src/
   define-node.ts index.ts
 packages/ui/src/
@@ -97,6 +98,7 @@ packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.
 packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
 packages/engine/          # openEngine, openEngineFromProject — in-process world runner
+                          # credentials.ts — ~/.machina/credentials.json (Task 1)
 packages/client/          # MachinaClient — browser-safe HTTP + WebSocket wrapper
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
                           # canvas-ops — src/canvas/; lib/undo-stack.ts, lib/graph-edit.ts
@@ -113,7 +115,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 ## Frozen exports (Wave 0 — do not rename)
 
-**`@machina/core`:** `PortType`, `PortDef`, `Cardinality`, `MachinaError`, `machinaError`, `matchPorts`, `MachinaProject`, `GraphDocument`, `MachinaNode`, `MachinaEdge`, `Wire`, `SimulationPlan`, `ObservationPacket`, `MachinaEvent`, `AgentAction`, `stripPositions`, `InstrumentMsg`
+**`@machina/core`:** `PortType`, `PortDef`, `Cardinality`, `MachinaError`, `machinaError`, `matchPorts`, `MachinaProject`, `GraphDocument`, `MachinaNode`, `MachinaEdge`, `Wire`, `SimulationPlan`, `ObservationPacket`, `MachinaEvent`, `AgentAction`, `stripPositions`, `InstrumentMsg`, `keyRefusedCopy`, `providerUnreachableCopy`, `illegalModelActionCopy`, `agentLlmIncompleteCopy`, `credentialsUnreadableCopy`, `noDefaultModelCopy`, `describeNoLlmCopy`
 
 **`@machina/node-sdk`:** `defineNode`, `NodeDefinition`, `NodeRegistry`, `createRegistry`
 
@@ -129,7 +131,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/persistence`:** `saveProject`, `loadProject`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
 
-**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`
+**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`, `loadCredentials`, `saveCredentials`, `publicProviderView`, `last4`, `restrictToOwner`, `ProviderId`, `CredentialsFile`
 
 **`@machina/client`:** `MachinaClient`, `CompileOutcome` (local; do not import `@machina/engine`)
 

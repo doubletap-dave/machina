@@ -14,3 +14,12 @@ export type { SimulationPlan } from "./plan.ts";
 export type { ObservationPacket, AgentAction } from "./packets.ts";
 export type { MachinaEvent } from "./events.ts";
 export type { InstrumentMsg } from "./instrument.ts";
+export {
+  keyRefusedCopy,
+  providerUnreachableCopy,
+  illegalModelActionCopy,
+  agentLlmIncompleteCopy,
+  credentialsUnreadableCopy,
+  noDefaultModelCopy,
+  describeNoLlmCopy,
+} from "./llm-english.ts";
