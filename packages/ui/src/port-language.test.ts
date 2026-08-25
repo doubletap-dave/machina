@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PortType } from "@machina/core";
-import { PORT_LANGUAGE, portLanguage } from "./index.ts";
+import { PORT_LANGUAGE, portLanguage, type PortSymbolId } from "./index.ts";
 
 const CORE_PORT_TYPES: PortType[] = [
   "ACTOR_REF",
@@ -34,7 +34,7 @@ const SPEC_COLORS: Record<PortType, string> = {
   ACTOR_REF: "#d6b48a",
 };
 
-const SPEC_SYMBOLS: Record<PortType, string> = {
+const SPEC_SYMBOLS: Record<PortType, PortSymbolId> = {
   CLOCK: "disk",
   OBSERVATION: "ring",
   ACTION: "triangle",

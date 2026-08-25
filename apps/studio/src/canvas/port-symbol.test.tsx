@@ -7,7 +7,7 @@ afterEach(() => {
   cleanup();
 });
 
-const SYMBOLS = [
+const SYMBOLS: readonly PortSymbolId[] = [
   "disk",
   "ring",
   "triangle",
@@ -21,12 +21,12 @@ const SYMBOLS = [
   "wedge",
   "square-ring",
   "notch",
-] as const;
+];
 
 describe("PortSymbol", () => {
   it("draws a distinct 10×10 geometric primitive for each symbol id", () => {
     const marks = SYMBOLS.map((id) => {
-      const { container } = render(<PortSymbol id={id as PortSymbolId} />);
+      const { container } = render(<PortSymbol id={id} />);
       const svg = container.querySelector(`[data-port-symbol="${id}"]`);
       expect(svg).toBeTruthy();
       expect(svg).toHaveAttribute("width", "10");
@@ -39,15 +39,27 @@ describe("PortSymbol", () => {
   });
 
   it("draws a filled disk and a hollow ring", () => {
-    const disk = render(<PortSymbol id={"disk" as PortSymbolId} />).container.querySelector(
+    const disk = render(<PortSymbol id="disk" />).container.querySelector(
       '[data-port-symbol="disk"]',
     );
-    const ring = render(<PortSymbol id={"ring" as PortSymbolId} />).container.querySelector(
+    const ring = render(<PortSymbol id="ring" />).container.querySelector(
       '[data-port-symbol="ring"]',
     );
 
     expect(disk?.querySelector("circle")).toBeTruthy();
     expect(ring?.querySelector("circle")).toBeTruthy();
     expect(disk!.innerHTML).not.toBe(ring!.innerHTML);
+  });
+
+  it("paints glyphs with an explicit contrast color, not inherited text color", () => {
+    const { container } = render(
+      <div style={{ color: "#a3a3a3" }}>
+        <PortSymbol id="square-ring" />
+      </div>,
+    );
+    const svg = container.querySelector('[data-port-symbol="square-ring"]');
+
+    expect(svg).toHaveStyle({ color: "#171717" });
+    expect((svg as HTMLElement | SVGElement).style.color).not.toBe("rgb(163, 163, 163)");
   });
 });

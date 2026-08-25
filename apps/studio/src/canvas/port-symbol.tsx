@@ -9,10 +9,11 @@ export function PortSymbol({ id }: { id: PortSymbolId }) {
     <svg
       width={SIZE}
       height={SIZE}
-      viewBox="0 0 10 10"
+      viewBox={`0 0 ${SIZE} ${SIZE}`}
       aria-hidden="true"
       data-port-symbol={id}
       className="pointer-events-none"
+      style={{ color: "#171717" }}
     >
       {glyph(id)}
     </svg>
