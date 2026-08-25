@@ -32,7 +32,13 @@ export function Inspector() {
 
   if (store.isAuthoringKind()) {
     return (
-      <aside className="w-64 overflow-y-auto border-l border-neutral-800 bg-neutral-950 p-3">
+      <aside
+        className="min-h-0 flex-1 overflow-y-auto p-3"
+        style={{
+          background: "var(--machina-panel-bg)",
+          borderColor: "var(--machina-panel-border)",
+        }}
+      >
         <KindAuthorForm library={browserKindLibrary} />
       </aside>
     );
@@ -40,7 +46,14 @@ export function Inspector() {
 
   if (!selected) {
     return (
-      <aside className="w-64 border-l border-neutral-800 bg-neutral-950 p-3 text-sm text-neutral-500">
+      <aside
+        className="min-h-0 flex-1 p-3 text-sm"
+        style={{
+          background: "var(--machina-panel-bg)",
+          borderColor: "var(--machina-panel-border)",
+          color: "var(--machina-text-muted)",
+        }}
+      >
         Select a node to inspect it.
       </aside>
     );
@@ -56,7 +69,13 @@ export function Inspector() {
     store.updateNodeConfig(selected.id, patch);
 
   return (
-    <aside className="w-64 border-l border-neutral-800 bg-neutral-950 p-3">
+    <aside
+      className="min-h-0 flex-1 overflow-y-auto p-3"
+      style={{
+        background: "var(--machina-panel-bg)",
+        borderColor: "var(--machina-panel-border)",
+      }}
+    >
       <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Inspector</h2>
       <p className="mb-4 text-sm font-medium text-neutral-100">{def.metadata.name}</p>
 

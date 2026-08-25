@@ -3,7 +3,26 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { noDefaultModelCopy } from "@machina/core";
 import type { PublicProviderSlice, SettingsModels } from "@machina/client";
+import type { StudioPrefs } from "@/lib/studio-prefs";
 import { ConfigurationPage } from "./ConfigurationPage";
+
+const dummyPrefs: StudioPrefs = {
+  schemaVersion: 1,
+  theme: "machina",
+  uiFont: "ibm-plex-sans",
+  monoFont: "ibm-plex-mono",
+};
+
+function renderPage() {
+  return render(
+    <ConfigurationPage
+      prefs={dummyPrefs}
+      onChange={() => {}}
+      skipAnimations={false}
+      onSkipAnimations={() => {}}
+    />,
+  );
+}
 
 const emptySlice = (): PublicProviderSlice => ({
   configured: false,
@@ -58,20 +77,24 @@ afterEach(() => {
 describe("ConfigurationPage", () => {
   it("shows four provider panels and no-default copy", async () => {
     getSettings.mockResolvedValue(settings());
-    render(<ConfigurationPage />);
+    renderPage();
 
     expect(await screen.findByRole("heading", { name: "Anthropic" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "OpenAI" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "OpenRouter" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Perplexity" })).toBeInTheDocument();
     expect(screen.getByText(noDefaultModelCopy())).toBeInTheDocument();
+    expect(screen.getByLabelText("Theme")).toBeInTheDocument();
+    expect(screen.getByLabelText("UI font")).toBeInTheDocument();
+    expect(screen.getByLabelText("Mono font")).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Skip animations" })).toBeInTheDocument();
   });
 
   it("shows the machine default as provider / model", async () => {
     getSettings.mockResolvedValue(
       settings({ default: { provider: "openai", model: "gpt-4o" } }),
     );
-    render(<ConfigurationPage />);
+    renderPage();
     expect(await screen.findByText("openai / gpt-4o")).toBeInTheDocument();
   });
 
@@ -88,7 +111,7 @@ describe("ConfigurationPage", () => {
     refreshProvider.mockResolvedValue(anthropic);
 
     const user = userEvent.setup();
-    render(<ConfigurationPage />);
+    renderPage();
     const panel = await screen.findByRole("region", { name: "Anthropic" });
 
     await user.type(within(panel).getByLabelText("API key"), "sk-ant-secret-abcd");
@@ -131,7 +154,7 @@ describe("ConfigurationPage", () => {
     });
 
     const user = userEvent.setup();
-    render(<ConfigurationPage />);
+    renderPage();
     const panel = await screen.findByRole("region", { name: "Anthropic" });
 
     await user.type(within(panel).getByLabelText("Filter"), "sonnet");

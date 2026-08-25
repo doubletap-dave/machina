@@ -1,6 +1,6 @@
 "use client";
 
-import { accent, canvasBg, font, fontMono } from "@machina/ui";
+import { accent, canvasBg, font } from "@machina/ui";
 import type { Preset } from "@machina/plugin-core";
 import { useCallback, useState } from "react";
 import { useProjectSnapshot } from "@/lib/project-store-context";
@@ -8,7 +8,8 @@ import { loadStudioPrefs } from "@/lib/studio-prefs";
 import { resolveMonoFont, resolveUiFont } from "@/lib/studio-fonts";
 import { getStudioClient } from "@/lib/machina-client";
 import { starterProject } from "@/templates/starter";
-import { AppearanceMenu } from "./AppearanceMenu";
+import type { Stance } from "@/run/stance";
+import { StanceBar } from "@/run/StanceBar";
 import { CanvasProvider } from "./Canvas";
 import { CommandPalette, useCommandPaletteShortcut } from "./CommandPalette";
 import { DescribePanel } from "./DescribePanel";
@@ -17,15 +18,13 @@ import { Library } from "./Library";
 import { ConfigurationPage } from "./ConfigurationPage";
 import { RunPanel } from "./RunPanel";
 import { ThemeRoot } from "./ThemeRoot";
-
-type StudioMode = "build" | "run" | "analyze" | "configure";
-
-const MODE_LABEL: Record<StudioMode, string> = {
-  build: "Build",
-  run: "Run",
-  analyze: "Analyze",
-  configure: "Configure",
-};
+import {
+  MODE_LABEL,
+  StudioFooter,
+  StudioHeader,
+  StudioWorkspace,
+  type StudioMode,
+} from "./studio-chrome";
 
 export function StudioShell() {
   const store = useProjectSnapshot();
@@ -38,7 +37,8 @@ export function StudioShell() {
   const [skipAnimations, setSkipAnimations] = useState(false);
   const [runPaused, setRunPaused] = useState(false);
   const [possessRequest, setPossessRequest] = useState<string | null>(null);
-  const turn = 0;
+  const [stance, setStance] = useState<Stance>({ mode: "watch" });
+  const [turn, setTurn] = useState(0);
   const events = 0;
   const cost = 0;
   const errors = 0;
@@ -79,8 +79,8 @@ export function StudioShell() {
         return;
       }
       try {
-        const project = await getStudioClient().loadExampleWorld();
-        store.replaceProject(project);
+        const loaded = await getStudioClient().loadExampleWorld();
+        store.replaceProject(loaded);
         showSuccess("Example world loaded.");
       } catch (error) {
         showError(error instanceof Error ? error.message : "Example load failed.");
@@ -90,10 +90,7 @@ export function StudioShell() {
   );
 
   const validateProject = useCallback(async () => {
-    const result = await getStudioClient().compile(
-      store.getProject(),
-      store.getKinds(),
-    );
+    const result = await getStudioClient().compile(store.getProject(), store.getKinds());
     if (!result.ok) {
       showError(result.errors.map((error) => error.message).join(" "));
       return;
@@ -114,127 +111,104 @@ export function StudioShell() {
         fontFamily: `var(--machina-font-ui, ${font})`,
       }}
     >
-      <header className="flex items-center justify-between border-b border-neutral-800 px-4 py-2">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold">Machina Studio</span>
-          <span className="text-xs text-neutral-500">{project.name}</span>
-          {inSubgraph ? (
-            <button
-              type="button"
-              className="rounded border border-neutral-700 px-2 py-0.5 text-xs hover:bg-neutral-800"
-              onClick={() => store.exitSubgraph()}
-            >
-              Back to parent graph
-            </button>
-          ) : null}
-        </div>
-        <nav className="flex gap-2 text-xs">
-          {(["build", "run", "analyze", "configure"] as const).map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              className={
-                mode === tab
-                  ? "rounded bg-neutral-200 px-3 py-1 font-medium text-black"
-                  : "rounded px-3 py-1 text-neutral-400 hover:text-neutral-200"
-              }
-              onClick={() => setMode(tab)}
-            >
-              {MODE_LABEL[tab]}
-            </button>
-          ))}
-          {mode === "build" ? (
-            <button
-              type="button"
-              className="rounded border border-neutral-700 px-3 py-1 text-neutral-300 hover:bg-neutral-800"
-              onClick={() => void validateProject()}
-            >
-              Validate
-            </button>
-          ) : null}
-        </nav>
-      </header>
-
-      {mode === "configure" ? (
-        <ConfigurationPage />
-      ) : (
-        <>
-          {mode === "build" ? <DescribePanel onError={showError} onSuccess={showSuccess} /> : null}
-
-          <div className="flex min-h-0 flex-1">
-            {mode === "build" ? (
-              <>
-                <Library
-                  onAddKind={addNodeAtCenter}
-                  onInsertPreset={insertPresetAtCenter}
-                  onLoadTemplate={loadTemplate}
-                />
-                <main className="relative min-w-0 flex-1">
-                  <CanvasProvider
-                    onEdgeError={showError}
-                    skipAnimations={skipAnimations}
-                    runPaused={runPaused}
-                    onPossessNode={setPossessRequest}
-                  />
-                </main>
-                <Inspector />
-              </>
-            ) : mode === "run" ? (
-              <main className="relative min-w-0 flex-1">
-                <CanvasProvider
-                  onEdgeError={showError}
-                  skipAnimations={skipAnimations}
-                  runPaused={runPaused}
-                  onPossessNode={setPossessRequest}
-                />
-              </main>
+      <StudioHeader
+        brand={
+          <>
+            <span className="text-sm font-semibold">Machina Studio</span>
+            <span className="text-xs" style={{ color: "var(--machina-text-muted)" }}>
+              {project.name}
+            </span>
+            {inSubgraph ? (
+              <button
+                type="button"
+                className="rounded border px-2 py-0.5 text-xs"
+                style={{ borderColor: "var(--machina-panel-border)" }}
+                onClick={() => store.exitSubgraph()}
+              >
+                Back to parent graph
+              </button>
             ) : null}
+          </>
+        }
+        modes={
+          <>
+            {(["build", "run", "analyze", "configure"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                className="rounded px-3 py-1 font-medium"
+                style={
+                  mode === tab
+                    ? {
+                        background: "var(--machina-accent)",
+                        color: "var(--machina-canvas-bg)",
+                      }
+                    : { color: "var(--machina-text-muted)" }
+                }
+                onClick={() => setMode(tab)}
+              >
+                {MODE_LABEL[tab]}
+              </button>
+            ))}
+            {mode === "build" ? (
+              <button
+                type="button"
+                className="rounded border px-3 py-1"
+                style={{
+                  borderColor: "var(--machina-panel-border)",
+                  color: "var(--machina-text)",
+                }}
+                onClick={() => void validateProject()}
+              >
+                Validate
+              </button>
+            ) : null}
+          </>
+        }
+        stances={<StanceBar stance={stance} onChange={setStance} />}
+      />
 
-            <aside
-              className={
-                mode === "build"
-                  ? "hidden"
-                  : mode === "analyze"
-                    ? "w-full border-l border-neutral-800 bg-neutral-950 p-4"
-                    : "w-72 border-l border-neutral-800 bg-neutral-950"
-              }
-            >
-              <RunPanel
-                onError={showError}
-                onPausedChange={setRunPaused}
-                possessRequest={possessRequest}
-                onPossessConsumed={() => setPossessRequest(null)}
-              />
-            </aside>
-          </div>
-        </>
-      )}
+      <StudioWorkspace
+        mode={mode}
+        describe={<DescribePanel onError={showError} onSuccess={showSuccess} />}
+        library={
+          <Library
+            onAddKind={addNodeAtCenter}
+            onInsertPreset={insertPresetAtCenter}
+            onLoadTemplate={loadTemplate}
+          />
+        }
+        canvas={
+          <CanvasProvider
+            onEdgeError={showError}
+            skipAnimations={skipAnimations}
+            runPaused={runPaused}
+            onPossessNode={setPossessRequest}
+          />
+        }
+        inspector={<Inspector />}
+        runPanel={
+          <RunPanel
+            onError={showError}
+            onPausedChange={setRunPaused}
+            possessRequest={possessRequest}
+            onPossessConsumed={() => setPossessRequest(null)}
+            stance={stance}
+            onStanceChange={setStance}
+            onTurn={setTurn}
+          />
+        }
+        configure={
+          <ConfigurationPage
+            prefs={prefs}
+            onChange={setPrefs}
+            skipAnimations={skipAnimations}
+            onSkipAnimations={setSkipAnimations}
+          />
+        }
+      />
 
-      <footer
-        className="flex items-center gap-6 border-t px-4 py-1.5 text-xs"
-        style={{
-          fontFamily: `var(--machina-font-mono, ${fontMono})`,
-          borderColor: "var(--machina-panel-border)",
-          background: "var(--machina-panel-bg)",
-          color: "var(--machina-text-muted)",
-        }}
-      >
-        <span>Turn {turn}</span>
-        <span>Events {events}</span>
-        <span>Cost ${cost}</span>
-        <span>Errors {errors}</span>
-        <div className="ml-auto flex flex-wrap items-center gap-4">
-          <AppearanceMenu prefs={prefs} onChange={setPrefs} />
-          <label className="flex items-center gap-2" style={{ color: "var(--machina-text)" }}>
-            <input
-              type="checkbox"
-              checked={skipAnimations}
-              onChange={(event) => setSkipAnimations(event.target.checked)}
-            />
-            Skip animations
-          </label>
-        </div>
-      </footer>
+      <StudioFooter turn={turn} events={events} cost={cost} errors={errors} />
 
       <CommandPalette
         open={paletteOpen}

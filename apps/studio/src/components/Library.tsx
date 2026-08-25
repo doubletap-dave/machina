@@ -35,7 +35,13 @@ export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryPr
   }, [registry, revision, store]);
 
   return (
-    <aside className="flex w-56 flex-col border-r border-neutral-800 bg-neutral-950 p-3">
+    <aside
+      className="flex h-full w-56 flex-col border-r p-3"
+      style={{
+        background: "var(--machina-panel-bg)",
+        borderColor: "var(--machina-panel-border)",
+      }}
+    >
       <div className="flex-1 space-y-4 overflow-y-auto">
         <section>
           <h3 className="mb-1 text-xs text-neutral-600">Presets</h3>

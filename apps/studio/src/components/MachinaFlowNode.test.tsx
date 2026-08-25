@@ -36,6 +36,16 @@ function renderFlowNode(ports: Record<string, PortDef>) {
   );
 }
 
+describe("MachinaFlowNode chrome", () => {
+  it("uses theme tokens for card fill stroke and text", () => {
+    const { container } = renderFlowNode({ obs: observationIn });
+    const card = container.querySelector("[data-machina-node]") as HTMLElement;
+    expect(card.style.background).toBe("var(--machina-node-fill)");
+    expect(card.style.borderColor).toBe("var(--machina-node-stroke)");
+    expect(card.style.color).toBe("var(--machina-text)");
+  });
+});
+
 describe("MachinaFlowNode handles", () => {
   it("marks an OBSERVATION in-port with data-port-type", () => {
     const { container } = renderFlowNode({ obs: observationIn });

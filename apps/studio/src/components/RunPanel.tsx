@@ -1,12 +1,11 @@
 "use client";
 
 import type { ObservationPacket } from "@machina/core";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getStudioClient } from "@/lib/machina-client";
 import { useProjectSnapshot } from "@/lib/project-store-context";
 import { AnalyzeTab } from "@/run/AnalyzeTab";
 import { PossessPanel } from "@/run/PossessPanel";
-import { StanceBar } from "@/run/StanceBar";
 import { legalPossessTargets, type Stance } from "@/run/stance";
 
 type RunPanelProps = {
@@ -14,6 +13,9 @@ type RunPanelProps = {
   onPausedChange?: (paused: boolean) => void;
   possessRequest?: string | null;
   onPossessConsumed?: () => void;
+  stance: Stance;
+  onStanceChange: (stance: Stance) => void;
+  onTurn?: (turn: number) => void;
 };
 
 export function RunPanel({
@@ -21,11 +23,13 @@ export function RunPanel({
   onPausedChange,
   possessRequest,
   onPossessConsumed,
+  stance,
+  onStanceChange,
+  onTurn,
 }: RunPanelProps) {
   const store = useProjectSnapshot();
   const [runId, setRunId] = useState<string | null>(null);
   const [turn, setTurn] = useState(0);
-  const [stance, setStanceState] = useState<Stance>({ mode: "watch" });
   const [busy, setBusy] = useState(false);
   const [paused, setPaused] = useState(false);
   const [packet, setPacket] = useState<ObservationPacket | null>(null);
@@ -44,18 +48,26 @@ export function RunPanel({
     [onPausedChange],
   );
 
+  const reportTurn = useCallback(
+    (next: number) => {
+      setTurn(next);
+      onTurn?.(next);
+    },
+    [onTurn],
+  );
+
   useEffect(() => {
     const client = getStudioClient();
     return client.subscribe((msg) => {
       if (msg.type === "possess-wait") {
         setPacket(msg.packet);
       } else if (msg.type === "turn") {
-        setTurn(msg.turn);
+        reportTurn(msg.turn);
       } else if (msg.type === "error") {
         onError(msg.message);
       }
     });
-  }, [onError]);
+  }, [onError, reportTurn]);
 
   const start = useCallback(async () => {
     const client = getStudioClient();
@@ -74,7 +86,7 @@ export function RunPanel({
         kinds: store.getKinds(),
       });
       setRunId(result.id);
-      setTurn(0);
+      reportTurn(0);
       reportPaused(false);
       setPacket(null);
     } catch (error) {
@@ -82,7 +94,7 @@ export function RunPanel({
     } finally {
       setBusy(false);
     }
-  }, [onError, possessNodeId, reportPaused, stance.mode, store]);
+  }, [onError, possessNodeId, reportPaused, reportTurn, stance.mode, store]);
 
   const step = useCallback(async () => {
     if (!runId) {
@@ -92,14 +104,14 @@ export function RunPanel({
     setBusy(true);
     try {
       const result = await client.step(runId);
-      setTurn(result.turn);
+      reportTurn(result.turn);
       reportPaused(false);
     } catch (error) {
       onError(error instanceof Error ? error.message : "Step failed.");
     } finally {
       setBusy(false);
     }
-  }, [onError, reportPaused, runId]);
+  }, [onError, reportPaused, reportTurn, runId]);
 
   const pause = useCallback(async () => {
     if (!runId) {
@@ -122,43 +134,42 @@ export function RunPanel({
       try {
         await client.rewind(runId, nextTurn);
         const status = await client.getRun(runId);
-        setTurn(status.turn);
+        reportTurn(status.turn);
       } catch (error) {
         onError(error instanceof Error ? error.message : "Rewind failed.");
       }
     },
-    [onError, runId],
+    [onError, reportTurn, runId],
   );
 
-  const changeStance = useCallback(
-    async (next: Stance) => {
-      const withTarget =
-        next.mode === "possess"
-          ? { ...next, nodeId: next.nodeId ?? possessTargets[0] }
-          : next;
-      setStanceState(withTarget);
-      if (withTarget.mode !== "possess") {
-        setPacket(null);
-      }
-      if (!runId) {
-        return;
-      }
-      try {
-        await getStudioClient().setStance(runId, withTarget.mode, withTarget.nodeId);
-      } catch (error) {
+  useEffect(() => {
+    if (stance.mode !== "possess") {
+      setPacket(null);
+    }
+  }, [stance.mode]);
+
+  const prevStance = useRef(stance);
+  useEffect(() => {
+    const stanceChanged =
+      prevStance.current.mode !== stance.mode || prevStance.current.nodeId !== stance.nodeId;
+    prevStance.current = stance;
+    if (!runId || !stanceChanged) {
+      return;
+    }
+    void getStudioClient()
+      .setStance(runId, stance.mode, stance.nodeId)
+      .catch((error: unknown) => {
         onError(error instanceof Error ? error.message : "Stance update failed.");
-      }
-    },
-    [onError, possessTargets, runId],
-  );
+      });
+  }, [onError, runId, stance]);
 
   useEffect(() => {
     if (!possessRequest) {
       return;
     }
-    void changeStance({ mode: "possess", nodeId: possessRequest });
+    onStanceChange({ mode: "possess", nodeId: possessRequest });
     onPossessConsumed?.();
-  }, [changeStance, onPossessConsumed, possessRequest]);
+  }, [onPossessConsumed, onStanceChange, possessRequest]);
 
   const submitPossessAction = useCallback(
     async (action: string) => {
@@ -180,7 +191,10 @@ export function RunPanel({
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 text-sm text-neutral-200">
+    <div
+      className="flex min-h-0 flex-1 flex-col gap-4 p-4 text-sm"
+      style={{ color: "var(--machina-text)" }}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -206,10 +220,8 @@ export function RunPanel({
         >
           Pause
         </button>
-        <span className="text-neutral-400">Turn {turn}</span>
+        <span style={{ color: "var(--machina-text-muted)" }}>Turn {turn}</span>
       </div>
-
-      <StanceBar stance={stance} onChange={(next) => void changeStance(next)} />
 
       {stance.mode === "possess" && packet ? (
         <PossessPanel

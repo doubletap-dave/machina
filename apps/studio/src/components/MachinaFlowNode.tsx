@@ -15,7 +15,15 @@ export function MachinaFlowNode({ data }: NodeProps) {
   const portEntries = Object.entries(nodeData.ports);
 
   return (
-    <div className="min-w-40 rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 shadow-lg">
+    <div
+      data-machina-node
+      className="min-w-40 rounded border px-3 py-2 text-sm shadow-lg"
+      style={{
+        background: "var(--machina-node-fill)",
+        borderColor: "var(--machina-node-stroke)",
+        color: "var(--machina-text)",
+      }}
+    >
       <div className="mb-2 font-medium">{nodeData.label}</div>
       <div className="space-y-1">
         {portEntries.map(([key, port]) => (

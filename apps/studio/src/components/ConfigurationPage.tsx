@@ -4,6 +4,8 @@ import { noDefaultModelCopy } from "@machina/core";
 import type { ProviderId, PublicProviderSlice, SettingsModels } from "@machina/client";
 import { useCallback, useEffect, useState } from "react";
 import { getStudioClient } from "@/lib/machina-client";
+import type { StudioPrefs } from "@/lib/studio-prefs";
+import { AppearanceMenu } from "./AppearanceMenu";
 import { ProviderPanel } from "./ProviderPanel";
 
 const PROVIDERS: { id: ProviderId; label: string }[] = [
@@ -29,7 +31,19 @@ function emptySettings(): SettingsModels {
   };
 }
 
-export function ConfigurationPage() {
+type ConfigurationPageProps = {
+  prefs: StudioPrefs;
+  onChange: (prefs: StudioPrefs) => void;
+  skipAnimations: boolean;
+  onSkipAnimations: (skip: boolean) => void;
+};
+
+export function ConfigurationPage({
+  prefs,
+  onChange,
+  skipAnimations,
+  onSkipAnimations,
+}: ConfigurationPageProps) {
   const [settings, setSettings] = useState<SettingsModels>(emptySettings());
   const [error, setError] = useState<string | null>(null);
 
@@ -90,6 +104,20 @@ export function ConfigurationPage() {
           />
         ))}
       </div>
+      <section className="mt-8 space-y-3">
+        <h2 className="text-sm font-medium" style={{ color: "var(--machina-text)" }}>
+          Appearance
+        </h2>
+        <AppearanceMenu prefs={prefs} onChange={onChange} />
+        <label className="flex items-center gap-2 text-sm" style={{ color: "var(--machina-text)" }}>
+          <input
+            type="checkbox"
+            checked={skipAnimations}
+            onChange={(event) => onSkipAnimations(event.target.checked)}
+          />
+          Skip animations
+        </label>
+      </section>
     </main>
   );
 }

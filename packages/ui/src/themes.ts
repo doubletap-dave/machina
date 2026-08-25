@@ -21,6 +21,7 @@ export const THEME_CSS_VARS = [
   "--machina-node-stroke",
   "--machina-minimap-node",
   "--machina-minimap-mask",
+  "--machina-grid-dot",
 ] as const;
 
 export const MACHINA_THEME_DEFAULTS: Record<(typeof THEME_CSS_VARS)[number], string> = {
@@ -34,6 +35,7 @@ export const MACHINA_THEME_DEFAULTS: Record<(typeof THEME_CSS_VARS)[number], str
   "--machina-node-stroke": "#3a3a3a",
   "--machina-minimap-node": "#8a8a8a",
   "--machina-minimap-mask": "rgba(12,12,12,0.8)",
+  "--machina-grid-dot": "#2a2a2a",
 };
 
 export function isMachinaThemeId(value: unknown): value is MachinaThemeId {

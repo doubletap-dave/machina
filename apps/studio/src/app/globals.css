@@ -25,6 +25,7 @@ html[data-machina-theme="machina"],
   --machina-node-stroke: #3a3a3a;
   --machina-minimap-node: #8a8a8a;
   --machina-minimap-mask: rgba(12, 12, 12, 0.8);
+  --machina-grid-dot: #2a2a2a;
 }
 
 html[data-machina-theme="eve"],
@@ -39,6 +40,7 @@ html[data-machina-theme="eve"],
   --machina-node-stroke: #1e3344;
   --machina-minimap-node: #4a8a9a;
   --machina-minimap-mask: rgba(7, 11, 18, 0.82);
+  --machina-grid-dot: #152030;
 }
 
 html[data-machina-theme="rpo"],
@@ -53,6 +55,7 @@ html[data-machina-theme="rpo"],
   --machina-node-stroke: #ff2ec8;
   --machina-minimap-node: #00e5ff;
   --machina-minimap-mask: rgba(8, 6, 12, 0.85);
+  --machina-grid-dot: #22182c;
 }
 
 html[data-machina-theme="trek"],
@@ -67,6 +70,7 @@ html[data-machina-theme="trek"],
   --machina-node-stroke: #c4922a;
   --machina-minimap-node: #d4a03a;
   --machina-minimap-mask: rgba(26, 20, 16, 0.8);
+  --machina-grid-dot: #3a2e24;
 }
 
 html[data-machina-theme="wars"],
@@ -81,6 +85,7 @@ html[data-machina-theme="wars"],
   --machina-node-stroke: #3d3d3d;
   --machina-minimap-node: #ffb000;
   --machina-minimap-mask: rgba(18, 18, 18, 0.82);
+  --machina-grid-dot: #2a2a2a;
 }
 
 @keyframes machina-pulse {

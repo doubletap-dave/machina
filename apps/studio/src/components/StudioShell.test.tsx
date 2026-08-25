@@ -7,7 +7,7 @@ import { Library } from "./Library";
 import { StudioShell } from "./StudioShell";
 
 vi.mock("./Canvas", () => ({
-  CanvasProvider: () => null,
+  CanvasProvider: () => <div data-testid="studio-canvas" />,
   findNodeById: () => undefined,
 }));
 
@@ -106,18 +106,43 @@ describe("StudioShell chrome", () => {
     renderShell();
     await user.click(screen.getByRole("button", { name: "Configure" }));
     expect(await screen.findByRole("heading", { name: "Anthropic" })).toBeInTheDocument();
+    const main = screen.getByRole("main");
+    expect(within(main).getByLabelText("Theme")).toBeInTheDocument();
+    expect(within(main).getByRole("checkbox", { name: "Skip animations" })).toBeInTheDocument();
   });
 
-  it("shows a status bar with skip animations", () => {
+  it("shows Watch God Possess in the header with Watch pressed", () => {
+    renderShell();
+    const header = screen.getByRole("banner");
+    expect(within(header).getByRole("button", { name: "Watch" })).toBeInTheDocument();
+    expect(within(header).getByRole("button", { name: "God" })).toBeInTheDocument();
+    expect(within(header).getByRole("button", { name: "Possess" })).toBeInTheDocument();
+    expect(within(header).getByRole("button", { name: "Watch" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("shows a telemetry footer without appearance controls", () => {
     renderShell();
     const bar = screen.getByRole("contentinfo");
     expect(within(bar).getByText("Turn 0")).toBeInTheDocument();
     expect(within(bar).getByText("Events 0")).toBeInTheDocument();
     expect(within(bar).getByText("Cost $0")).toBeInTheDocument();
     expect(within(bar).getByText("Errors 0")).toBeInTheDocument();
-    expect(within(bar).getByRole("checkbox", { name: "Skip animations" })).toBeInTheDocument();
-    expect(within(bar).getByLabelText("Theme")).toBeInTheDocument();
-    expect(within(bar).getByLabelText("UI font")).toBeInTheDocument();
-    expect(within(bar).getByLabelText("Mono font")).toBeInTheDocument();
+    expect(within(bar).queryByRole("checkbox", { name: "Skip animations" })).not.toBeInTheDocument();
+    expect(within(bar).queryByLabelText("Theme")).not.toBeInTheDocument();
+    expect(within(bar).queryByLabelText("UI font")).not.toBeInTheDocument();
+    expect(within(bar).queryByLabelText("Mono font")).not.toBeInTheDocument();
+  });
+
+  it("keeps the canvas on Analyze and Inspector on Build", async () => {
+    const user = userEvent.setup();
+    renderShell();
+    expect(screen.getByText("Select a node to inspect it.")).toBeInTheDocument();
+    expect(screen.getByTestId("studio-canvas")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Analyze" }));
+    expect(screen.getByTestId("studio-canvas")).toBeInTheDocument();
   });
 });

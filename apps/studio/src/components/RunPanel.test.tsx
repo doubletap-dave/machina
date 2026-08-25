@@ -1,10 +1,11 @@
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useLayoutEffect, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { InstrumentMsg, ObservationPacket } from "@machina/core";
 import { createStudioRegistry } from "@/lib/create-studio-registry";
 import { ProjectStoreProvider, useProjectSnapshot } from "@/lib/project-store-context";
+import type { Stance } from "@/run/stance";
 import { RunPanel } from "./RunPanel";
 
 const { compile, startRun, pause, setStance, subscribe } = vi.hoisted(() => ({
@@ -47,6 +48,9 @@ type RunPanelHarnessProps = {
   onPausedChange?: (paused: boolean) => void;
   possessRequest?: string | null;
   onPossessConsumed?: () => void;
+  stance?: Stance;
+  onStanceChange?: (stance: Stance) => void;
+  onTurn?: (turn: number) => void;
 };
 
 function SeededRunPanel({
@@ -54,9 +58,13 @@ function SeededRunPanel({
   onPausedChange,
   possessRequest,
   onPossessConsumed,
+  stance,
+  onStanceChange,
+  onTurn,
 }: RunPanelHarnessProps) {
   const store = useProjectSnapshot();
   const [ready, setReady] = useState(false);
+  const [localStance, setLocalStance] = useState<Stance>(stance ?? { mode: "watch" });
 
   useLayoutEffect(() => {
     store.addNode("cognition.agent", { x: 0, y: 0 });
@@ -73,6 +81,9 @@ function SeededRunPanel({
       onPausedChange={onPausedChange}
       possessRequest={possessRequest}
       onPossessConsumed={onPossessConsumed}
+      stance={stance ?? localStance}
+      onStanceChange={onStanceChange ?? setLocalStance}
+      onTurn={onTurn}
     />
   );
 }
@@ -107,17 +118,16 @@ describe("RunPanel", () => {
   });
 
   it("hides possess-panel until a possess-wait packet arrives and never shows chainOfThought", async () => {
-    const user = userEvent.setup();
     let onMessage: ((msg: InstrumentMsg) => void) | undefined;
     subscribe.mockImplementation((handler: (msg: InstrumentMsg) => void) => {
       onMessage = handler;
       return () => {};
     });
 
-    renderRunPanel();
+    renderRunPanel(() => {}, { stance: { mode: "possess" } });
 
-    const stance = await screen.findByRole("group", { name: "Run stance" });
-    await user.click(within(stance).getByRole("button", { name: "possess" }));
+    expect(await screen.findByRole("button", { name: "Start run" })).toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Run stance" })).not.toBeInTheDocument();
     expect(screen.queryByTestId("possess-panel")).not.toBeInTheDocument();
 
     act(() => {
@@ -132,11 +142,9 @@ describe("RunPanel", () => {
 
   it("startRun sends the current stance and possessNodeId", async () => {
     const user = userEvent.setup();
-    renderRunPanel();
+    renderRunPanel(() => {}, { stance: { mode: "possess" } });
 
-    const stance = await screen.findByRole("group", { name: "Run stance" });
-    await user.click(within(stance).getByRole("button", { name: "possess" }));
-    await user.click(screen.getByRole("button", { name: "Start run" }));
+    await user.click(await screen.findByRole("button", { name: "Start run" }));
 
     expect(startRun).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -146,6 +154,23 @@ describe("RunPanel", () => {
     );
     const body = startRun.mock.calls[0]?.[0] as { possessNodeId?: string };
     expect(body.possessNodeId?.length).toBeGreaterThan(0);
+  });
+
+  it("reports turn to onTurn", async () => {
+    let onMessage: ((msg: InstrumentMsg) => void) | undefined;
+    subscribe.mockImplementation((handler: (msg: InstrumentMsg) => void) => {
+      onMessage = handler;
+      return () => {};
+    });
+    const onTurn = vi.fn();
+    renderRunPanel(() => {}, { onTurn });
+
+    await screen.findByRole("button", { name: "Start run" });
+    act(() => {
+      onMessage?.({ type: "turn", turn: 3 });
+    });
+
+    expect(onTurn).toHaveBeenCalledWith(3);
   });
 
   it("reports pause to onPausedChange", async () => {
@@ -164,6 +189,7 @@ describe("RunPanel", () => {
 
     function PossessRequestHarness() {
       const [request, setRequest] = useState<string | null>(null);
+      const [stance, setStanceState] = useState<Stance>({ mode: "watch" });
       return (
         <>
           <button type="button" onClick={() => setRequest("actor-1")}>
@@ -173,6 +199,8 @@ describe("RunPanel", () => {
             onError={() => {}}
             possessRequest={request}
             onPossessConsumed={() => setRequest(null)}
+            stance={stance}
+            onStanceChange={setStanceState}
           />
         </>
       );
@@ -188,10 +216,5 @@ describe("RunPanel", () => {
     await user.click(screen.getByRole("button", { name: "Request possess" }));
 
     expect(setStance).toHaveBeenCalledWith("run-1", "possess", "actor-1");
-    const stance = screen.getByRole("group", { name: "Run stance" });
-    expect(within(stance).getByRole("button", { name: "possess" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
   });
 });
