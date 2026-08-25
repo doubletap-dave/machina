@@ -42,9 +42,9 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | **3 Dead Channel Lite** | **✅ Done** | **`master` @ `993fef8`** | **77/77 (`pnpm test`)** |
 | Studio canvas-ops | ⏳ In progress | `master` @ `71704b3` | 81/81 (`@machina/studio`) |
 | Studio port-language | ✅ Done | `master` @ `ba311ca` | 9/9 (`@machina/ui`) · 89/89 (`@machina/studio`) |
-| Studio models | ⏳ Task 4 | Task 3 settings HTTP | 23/23 runtime · 8/8 client · 23/23 engine |
+| Models and credentials | ✅ Done | `master` @ `2c23ff7` | 33/33 engine · 26/26 runtime · 10/10 client · 5/5 plugin-core · 99/99 studio |
 
-Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md`
+Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md` · `lane-studio-models.md`
 
 ---
 
@@ -98,14 +98,17 @@ packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.
 packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
 packages/engine/          # openEngine, openEngineFromProject — in-process world runner
-                          # credentials.ts — ~/.machina/credentials.json (Task 1); env overlay helpers
-                          # list-models.ts — listAndVerify (Task 2; injectable fetch)
+                          # credentials.ts — join(homedir(), ".machina", "credentials.json"); env overlay
+                          # list-models.ts — listAndVerify (injectable fetch)
+                          # llm-think.ts — createLlmThink (default Think when opts.think omitted)
 packages/client/          # MachinaClient — HTTP + WS; settings: getSettings, putProviderKey, deleteProvider, refreshProvider, putDefault
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
                           # canvas-ops — src/canvas/; lib/undo-stack.ts, lib/graph-edit.ts
                           # port-language — src/canvas/port-symbol.tsx; connect-highlight.ts
+                          # Configuration — components/ConfigurationPage.tsx (Configure mode)
 apps/runtime/             # HTTP/CLI drive @machina/engine (app.ts, serve.ts, run-project.ts, cli.ts)
-apps/runtime/src/settings.ts # Task 3 ✅ — GET/PUT/DELETE /settings/* (no apiKey on GET)
+apps/runtime/src/settings.ts # GET/PUT/DELETE /settings/* (no apiKey on GET); env overlay + in-memory verify
+apps/runtime/src/compose.ts  # POST /compose — same verified view as GET /settings/models
 apps/runtime/src/instrumentation.ts  # Lane 2b ✅ — toWs bridge
 examples/dead-channel-lite/ # Wave 3 ✅ — two nations, 20-turn proof
 docs/reports/             # Implementation reports (required)
@@ -133,7 +136,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/persistence`:** `saveProject`, `loadProject`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
 
-**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`, `loadCredentials`, `saveCredentials`, `publicProviderView`, `last4`, `restrictToOwner`, `ProviderId`, `CredentialsFile`, `listAndVerify`, `ListModelsResult`, `apiKeyFromEnv`, `isProviderId`, `PROVIDER_IDS`, `PROVIDER_ENV`
+**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`, `credentialsPath`, `loadCredentials`, `saveCredentials`, `publicProviderView`, `last4`, `restrictToOwner`, `ProviderId`, `CredentialsFile`, `listAndVerify`, `ListModelsResult`, `apiKeyFromEnv`, `isProviderId`, `PROVIDER_IDS`, `PROVIDER_ENV`, `createLlmThink`, `langchainInvokeChat`
 
 **`@machina/client`:** `MachinaClient`, `CompileOutcome`, `SettingsModels`, `PublicProviderSlice` (local; do not import `@machina/engine`)
 
@@ -149,10 +152,10 @@ pnpm install
 pnpm dev                               # browser: Studio @ :3000 + runtime @ :4000
 pnpm dev:studio                        # Studio only
 pnpm dev:runtime                       # Runtime API only
-pnpm test                              # 77/77 automated tests
-pnpm --filter @machina/engine test     # 23/23 in-process engine
-pnpm --filter @machina/runtime test    # 23/23 including settings HTTP
-pnpm --filter @machina/client test     # 8/8 HTTP + WS + settings methods
+pnpm test                              # workspace automated tests
+pnpm --filter @machina/engine test     # 33/33 in-process engine (credentials, list-models, createLlmThink)
+pnpm --filter @machina/runtime test    # 26/26 including settings HTTP + compose
+pnpm --filter @machina/client test     # 10/10 HTTP + WS + settings + compose
 
 # Add a dependency to a package (example)
 cd packages/graph
@@ -221,4 +224,4 @@ pnpm install
 ## Open concerns
 
 - Vitest: `vitest.workspace.ts` is deprecated — migrate to `test.projects` in root `vitest.config.ts` before Vitest 4.
-- Production runtime/CLI have no default `think`; missing model errors in English until Task 11 wires a chat model.
+- Missing or unverified model: English + pause via `createLlmThink` / compose; no invented action.
