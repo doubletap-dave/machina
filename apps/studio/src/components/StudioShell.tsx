@@ -4,6 +4,7 @@ import { accent, canvasBg, font, fontMono } from "@machina/ui";
 import type { Preset } from "@machina/plugin-core";
 import { useCallback, useState } from "react";
 import { useProjectSnapshot } from "@/lib/project-store-context";
+import { loadStudioPrefs } from "@/lib/studio-prefs";
 import { getStudioClient } from "@/lib/machina-client";
 import { starterProject } from "@/templates/starter";
 import { CanvasProvider } from "./Canvas";
@@ -13,6 +14,7 @@ import { Inspector } from "./Inspector";
 import { Library } from "./Library";
 import { ConfigurationPage } from "./ConfigurationPage";
 import { RunPanel } from "./RunPanel";
+import { ThemeRoot } from "./ThemeRoot";
 
 type StudioMode = "build" | "run" | "analyze" | "configure";
 
@@ -25,6 +27,7 @@ const MODE_LABEL: Record<StudioMode, string> = {
 
 export function StudioShell() {
   const store = useProjectSnapshot();
+  const [prefs] = useState(() => loadStudioPrefs());
   const [mode, setMode] = useState<StudioMode>("build");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -96,7 +99,15 @@ export function StudioShell() {
   }, [showError, store]);
 
   return (
-    <div className="flex h-screen flex-col" style={{ background: canvasBg, color: accent, fontFamily: font }}>
+    <ThemeRoot
+      theme={prefs.theme}
+      className="flex h-screen flex-col"
+      style={{
+        background: `var(--machina-canvas-bg, ${canvasBg})`,
+        color: `var(--machina-text, ${accent})`,
+        fontFamily: `var(--machina-font-ui, ${font})`,
+      }}
+    >
       <header className="flex items-center justify-between border-b border-neutral-800 px-4 py-2">
         <div className="flex items-center gap-3">
           <span className="text-sm font-semibold">Machina Studio</span>
@@ -193,7 +204,15 @@ export function StudioShell() {
         </>
       )}
 
-      <footer className="flex items-center gap-6 border-t border-neutral-800 px-4 py-1.5 text-xs text-neutral-400" style={{ fontFamily: fontMono }}>
+      <footer
+        className="flex items-center gap-6 border-t px-4 py-1.5 text-xs"
+        style={{
+          fontFamily: `var(--machina-font-mono, ${fontMono})`,
+          borderColor: "var(--machina-panel-border)",
+          background: "var(--machina-panel-bg)",
+          color: "var(--machina-text-muted)",
+        }}
+      >
         <span>Turn {turn}</span>
         <span>Events {events}</span>
         <span>Cost ${cost}</span>
@@ -227,6 +246,6 @@ export function StudioShell() {
           {toast}
         </div>
       ) : null}
-    </div>
+    </ThemeRoot>
   );
 }

@@ -4,11 +4,83 @@ html,
 body {
   height: 100%;
   margin: 0;
-  font-family: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--machina-font-ui, var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif);
+  background: var(--machina-canvas-bg, #0c0c0c);
+  color: var(--machina-text, #c8c8c8);
 }
 
 .font-mono {
-  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-family: var(--machina-font-mono, var(--font-ibm-plex-mono), ui-monospace, monospace);
+}
+
+html[data-machina-theme="machina"],
+[data-machina-theme="machina"] {
+  --machina-canvas-bg: #0c0c0c;
+  --machina-panel-bg: #171717;
+  --machina-panel-border: #262626;
+  --machina-text: #c8c8c8;
+  --machina-text-muted: #a3a3a3;
+  --machina-accent: #c8c8c8;
+  --machina-node-fill: #1a1a1a;
+  --machina-node-stroke: #3a3a3a;
+  --machina-minimap-node: #8a8a8a;
+  --machina-minimap-mask: rgba(12, 12, 12, 0.8);
+}
+
+html[data-machina-theme="eve"],
+[data-machina-theme="eve"] {
+  --machina-canvas-bg: #070b12;
+  --machina-panel-bg: #0a1018;
+  --machina-panel-border: #1a2838;
+  --machina-text: #c5d0d8;
+  --machina-text-muted: #6d8494;
+  --machina-accent: #4a8a9a;
+  --machina-node-fill: #0d1520;
+  --machina-node-stroke: #1e3344;
+  --machina-minimap-node: #4a8a9a;
+  --machina-minimap-mask: rgba(7, 11, 18, 0.82);
+}
+
+html[data-machina-theme="rpo"],
+[data-machina-theme="rpo"] {
+  --machina-canvas-bg: #08060c;
+  --machina-panel-bg: #120c18;
+  --machina-panel-border: #3a1a4a;
+  --machina-text: #e8e0f0;
+  --machina-text-muted: #8a7a9a;
+  --machina-accent: #00e5ff;
+  --machina-node-fill: #140e1c;
+  --machina-node-stroke: #ff2ec8;
+  --machina-minimap-node: #00e5ff;
+  --machina-minimap-mask: rgba(8, 6, 12, 0.85);
+}
+
+html[data-machina-theme="trek"],
+[data-machina-theme="trek"] {
+  --machina-canvas-bg: #1a1410;
+  --machina-panel-bg: #241c14;
+  --machina-panel-border: #8a6a28;
+  --machina-text: #e8dcc0;
+  --machina-text-muted: #a89068;
+  --machina-accent: #d4a03a;
+  --machina-node-fill: #2a2018;
+  --machina-node-stroke: #c4922a;
+  --machina-minimap-node: #d4a03a;
+  --machina-minimap-mask: rgba(26, 20, 16, 0.8);
+}
+
+html[data-machina-theme="wars"],
+[data-machina-theme="wars"] {
+  --machina-canvas-bg: #121212;
+  --machina-panel-bg: #1c1c1c;
+  --machina-panel-border: #333333;
+  --machina-text: #f5e6c8;
+  --machina-text-muted: #b8a888;
+  --machina-accent: #ffb000;
+  --machina-node-fill: #1a1a1a;
+  --machina-node-stroke: #3d3d3d;
+  --machina-minimap-node: #ffb000;
+  --machina-minimap-mask: rgba(18, 18, 18, 0.82);
 }
 
 @keyframes machina-pulse {
