@@ -16,6 +16,13 @@ type NodeChangeLike = {
   selected?: boolean;
 };
 
+export function isCanvasPaneTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+  return target.closest(".react-flow, [data-machina-canvas]") !== null;
+}
+
 export function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false;
@@ -41,7 +48,7 @@ export function canvasKeyAction(event: {
     return null;
   }
   if (event.key === "Delete" || event.key === "Backspace") {
-    return { kind: "delete" };
+    return isCanvasPaneTarget(event.target) ? { kind: "delete" } : null;
   }
   const mod = event.ctrlKey || event.metaKey;
   if (!mod) {
@@ -84,8 +91,7 @@ export function dispatchCanvasKeyAction(
   store: {
     undo(): void;
     redo(): void;
-    deleteNodes(ids: string[]): void;
-    deleteEdges(ids: string[]): void;
+    deleteSelection(nodeIds: string[], edgeIds: string[]): void;
   },
   selection: { nodeIds: string[]; edgeIds: string[] },
 ): void {
@@ -97,12 +103,7 @@ export function dispatchCanvasKeyAction(
     store.redo();
     return;
   }
-  if (selection.nodeIds.length > 0) {
-    store.deleteNodes(selection.nodeIds);
-  }
-  if (selection.edgeIds.length > 0) {
-    store.deleteEdges(selection.edgeIds);
-  }
+  store.deleteSelection(selection.nodeIds, selection.edgeIds);
 }
 
 export function nodeChangeOps(changes: readonly NodeChangeLike[]): NodeStoreOp[] {

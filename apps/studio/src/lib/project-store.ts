@@ -83,6 +83,32 @@ export function createProjectStore(registry: NodeRegistry) {
     redos.length = 0;
   }
 
+  function deleteSelection(nodeIds: string[], edgeIds: string[]): void {
+    const graph = currentGraph();
+    const existingNodes = nodeIds.filter((id) => findNode(graph, id));
+    const edgeIdSet = new Set(edgeIds);
+    const hasEdges = project.graphs.some((candidate) =>
+      candidate.edges.some((edge) => edgeIdSet.has(edge.id)),
+    );
+    if (existingNodes.length === 0 && !hasEdges) {
+      return;
+    }
+    record();
+    if (existingNodes.length > 0) {
+      const removed = deleteNodesFromProject(project, graph, existingNodes);
+      if (selectedNodeId && removed.includes(selectedNodeId)) {
+        selectedNodeId = null;
+      }
+      if (!graphById(currentGraphId)) {
+        currentGraphId = project.entryGraphId;
+      }
+    }
+    if (hasEdges) {
+      deleteEdgesFromProject(project, edgeIds);
+    }
+    emit();
+  }
+
   return {
     subscribe(listener: Listener): () => void {
       listeners.add(listener);
@@ -251,34 +277,14 @@ export function createProjectStore(registry: NodeRegistry) {
     },
 
     deleteNodes(ids: string[]): void {
-      const graph = currentGraph();
-      const existing = ids.filter((id) => findNode(graph, id));
-      if (existing.length === 0) {
-        return;
-      }
-      record();
-      const removed = deleteNodesFromProject(project, graph, existing);
-      if (selectedNodeId && removed.includes(selectedNodeId)) {
-        selectedNodeId = null;
-      }
-      if (!graphById(currentGraphId)) {
-        currentGraphId = project.entryGraphId;
-      }
-      emit();
+      deleteSelection(ids, []);
     },
 
     deleteEdges(ids: string[]): void {
-      const idSet = new Set(ids);
-      const exists = project.graphs.some((graph) =>
-        graph.edges.some((edge) => idSet.has(edge.id)),
-      );
-      if (!exists) {
-        return;
-      }
-      record();
-      deleteEdgesFromProject(project, ids);
-      emit();
+      deleteSelection([], ids);
     },
+
+    deleteSelection,
 
     duplicateNodes(ids: string[]): string[] {
       const graph = currentGraph();

@@ -23,14 +23,40 @@ function keyEvent(partial: {
   };
 }
 
+function paneTarget(): HTMLElement {
+  const pane = document.createElement("div");
+  pane.className = "react-flow";
+  const inner = document.createElement("div");
+  pane.appendChild(inner);
+  document.body.appendChild(pane);
+  return inner;
+}
+
 describe("canvasKeyAction", () => {
-  it("maps Delete and Backspace to delete when not in a text field", () => {
-    expect(canvasKeyAction(keyEvent({ key: "Delete" }))).toEqual({ kind: "delete" });
-    expect(canvasKeyAction(keyEvent({ key: "Backspace" }))).toEqual({ kind: "delete" });
+  it("maps Delete and Backspace to delete when the target is inside the flow pane", () => {
+    const inner = paneTarget();
+    expect(canvasKeyAction(keyEvent({ key: "Delete", target: inner }))).toEqual({ kind: "delete" });
+    expect(canvasKeyAction(keyEvent({ key: "Backspace", target: inner }))).toEqual({
+      kind: "delete",
+    });
+  });
+
+  it("does not delete when a Library or Inspector button is focused", () => {
+    const button = document.createElement("button");
+    button.textContent = "Personality";
+    document.body.appendChild(button);
+
+    expect(canvasKeyAction(keyEvent({ key: "Delete", target: button }))).toBeNull();
+    expect(canvasKeyAction(keyEvent({ key: "Backspace", target: button }))).toBeNull();
+    expect(canvasKeyAction(keyEvent({ key: "Delete", target: document.body }))).toBeNull();
   });
 
   it("maps Ctrl/Meta+Z to undo and Shift+Z or Y to redo", () => {
-    expect(canvasKeyAction(keyEvent({ key: "z", ctrlKey: true }))).toEqual({ kind: "undo" });
+    const button = document.createElement("button");
+    document.body.appendChild(button);
+    expect(canvasKeyAction(keyEvent({ key: "z", ctrlKey: true, target: button }))).toEqual({
+      kind: "undo",
+    });
     expect(canvasKeyAction(keyEvent({ key: "z", metaKey: true }))).toEqual({ kind: "undo" });
     expect(canvasKeyAction(keyEvent({ key: "z", ctrlKey: true, shiftKey: true }))).toEqual({
       kind: "redo",
@@ -55,20 +81,20 @@ describe("canvasKeyAction", () => {
 });
 
 describe("dispatchCanvasKeyAction", () => {
-  it("deletes selected nodes and edges, and routes undo/redo to the store", () => {
+  it("deletes mixed selection with one store method, and routes undo/redo", () => {
     const calls: string[] = [];
     const store = {
       undo: () => calls.push("undo"),
       redo: () => calls.push("redo"),
-      deleteNodes: (ids: string[]) => calls.push(`nodes:${ids.join(",")}`),
-      deleteEdges: (ids: string[]) => calls.push(`edges:${ids.join(",")}`),
+      deleteSelection: (nodeIds: string[], edgeIds: string[]) =>
+        calls.push(`selection:${nodeIds.join(",")}|${edgeIds.join(",")}`),
     };
 
     dispatchCanvasKeyAction({ kind: "undo" }, store, { nodeIds: ["n"], edgeIds: ["e"] });
     dispatchCanvasKeyAction({ kind: "redo" }, store, { nodeIds: ["n"], edgeIds: ["e"] });
     dispatchCanvasKeyAction({ kind: "delete" }, store, { nodeIds: ["n1", "n2"], edgeIds: ["e1"] });
 
-    expect(calls).toEqual(["undo", "redo", "nodes:n1,n2", "edges:e1"]);
+    expect(calls).toEqual(["undo", "redo", "selection:n1,n2|e1"]);
   });
 });
 

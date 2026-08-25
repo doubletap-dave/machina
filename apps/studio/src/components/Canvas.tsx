@@ -191,6 +191,7 @@ export function Canvas({ onEdgeError, skipAnimations = false }: CanvasProps) {
   return (
     <div
       className={skipAnimations ? "skip-animations h-full w-full" : "h-full w-full"}
+      data-machina-canvas=""
       style={{
         background: `var(--machina-canvas-bg, ${canvasBg})`,
         ["--machina-anim-ms" as string]: `${animationDelayMs(skipAnimations)}ms`,

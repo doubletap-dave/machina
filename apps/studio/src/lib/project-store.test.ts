@@ -301,6 +301,27 @@ describe("createProjectStore", () => {
     expect(store.getCurrentGraph().nodes.find((node) => node.id === personality.id)).toBeDefined();
   });
 
+  it("deleteSelection of a node and an unrelated edge is one undo", () => {
+    const store = createProjectStore(testRegistry());
+    expect(store.getCurrentGraph().nodes.some((node) => node.id === "logger")).toBe(true);
+    expect(store.getCurrentGraph().edges.some((edge) => edge.id === "clock-world")).toBe(true);
+
+    store.deleteSelection(["logger"], ["clock-world"]);
+
+    expect(store.getCurrentGraph().nodes.find((node) => node.id === "logger")).toBeUndefined();
+    expect(store.getCurrentGraph().edges.find((edge) => edge.id === "clock-world")).toBeUndefined();
+    expect(store.getCurrentGraph().nodes.find((node) => node.id === "clock")).toBeDefined();
+    expect(store.getCurrentGraph().edges.find((edge) => edge.id === "world-inspector")).toBeDefined();
+
+    store.undo();
+
+    expect(store.getCurrentGraph().nodes.find((node) => node.id === "logger")?.id).toBe("logger");
+    expect(store.getCurrentGraph().edges.find((edge) => edge.id === "clock-world")?.id).toBe(
+      "clock-world",
+    );
+    expect(store.getCurrentGraph().nodes.find((node) => node.id === "clock")).toBeDefined();
+  });
+
   it("deleteEdges removes only those edges; undo restores them", () => {
     const store = createProjectStore(testRegistry());
     store.deleteEdges(["clock-world"]);
