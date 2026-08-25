@@ -11,13 +11,24 @@ import {
   useReactFlow,
   type Connection,
   type Edge,
+  type EdgeChange,
   type Node,
   type NodeChange,
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MachinaNode } from "@machina/core";
+import { toFlowEdges, toFlowNodes } from "@/canvas/flow-elements.ts";
+import { isValidMachinaConnection } from "@/canvas/is-valid-connection.ts";
+import { minimapMaskColor, minimapNodeFill } from "@/canvas/minimap.ts";
+import {
+  applySelectionChanges,
+  canvasKeyAction,
+  dispatchCanvasKeyAction,
+  nodeChangeOps,
+  removedIds,
+} from "@/canvas/selection-delete.ts";
 import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
 import { MachinaFlowNode } from "./MachinaFlowNode";
 
@@ -28,6 +39,10 @@ type CanvasProps = {
   skipAnimations?: boolean;
 };
 
+function rootStyle(): CSSStyleDeclaration | undefined {
+  return typeof document === "undefined" ? undefined : getComputedStyle(document.documentElement);
+}
+
 export function Canvas({ onEdgeError, skipAnimations = false }: CanvasProps) {
   const store = useProjectSnapshot();
   const registry = useRegistry();
@@ -37,7 +52,13 @@ export function Canvas({ onEdgeError, skipAnimations = false }: CanvasProps) {
   const reactFlow = useReactFlow();
   const fitViewRef = useRef(reactFlow.fitView);
   const fittedGraphIdRef = useRef<string | null>(null);
+  const selectedNodeIdsRef = useRef(new Set<string>());
+  const selectedEdgeIdsRef = useRef(new Set<string>());
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
+  const [selectedEdgeIds, setSelectedEdgeIds] = useState<Set<string>>(new Set());
   fitViewRef.current = reactFlow.fitView;
+  selectedNodeIdsRef.current = selectedNodeIds;
+  selectedEdgeIdsRef.current = selectedEdgeIds;
 
   useEffect(() => {
     if (!nodesInitialized || fittedGraphIdRef.current === currentGraphId) {
@@ -47,39 +68,35 @@ export function Canvas({ onEdgeError, skipAnimations = false }: CanvasProps) {
     fitViewRef.current();
   }, [currentGraphId, nodesInitialized]);
 
+  useEffect(() => {
+    setSelectedNodeIds(new Set());
+    setSelectedEdgeIds(new Set());
+  }, [currentGraphId]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent): void {
+      const action = canvasKeyAction(event);
+      if (!action) {
+        return;
+      }
+      event.preventDefault();
+      dispatchCanvasKeyAction(action, store, {
+        nodeIds: [...selectedNodeIdsRef.current],
+        edgeIds: [...selectedEdgeIdsRef.current],
+      });
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [store]);
+
   const flowNodes: Node[] = useMemo(
-    () =>
-      graph.nodes.map((node) => {
-        const def = registry.getOrThrow(node.kind, node.version);
-        const config = node.config as Record<string, string | undefined>;
-        const label =
-          node.kind === "entities.actor" && config.name
-            ? String(config.name)
-            : def.metadata.name;
-        return {
-          id: node.id,
-          type: "machina",
-          position: node.position,
-          selected: store.getSelectedNodeId() === node.id,
-          data: {
-            label,
-            ports: def.ports,
-          },
-        };
-      }),
-    [graph.nodes, registry, store],
+    () => toFlowNodes(graph.nodes, registry, selectedNodeIds),
+    [graph.nodes, registry, selectedNodeIds],
   );
 
   const flowEdges: Edge[] = useMemo(
-    () =>
-      graph.edges.map((edge) => ({
-        id: edge.id,
-        source: edge.sourceNode,
-        target: edge.targetNode,
-        sourceHandle: edge.sourcePort,
-        targetHandle: edge.targetPort,
-      })),
-    [graph.edges],
+    () => toFlowEdges(graph.edges, graph.nodes, registry, selectedEdgeIds),
+    [graph.edges, graph.nodes, registry, selectedEdgeIds],
   );
 
   const onConnect = useCallback(
@@ -100,6 +117,19 @@ export function Canvas({ onEdgeError, skipAnimations = false }: CanvasProps) {
     [onEdgeError, store],
   );
 
+  const isValidConnection = useCallback(
+    (connection: Connection | Edge) =>
+      isValidMachinaConnection({
+        registry,
+        nodes: graph.nodes,
+        source: connection.source,
+        target: connection.target,
+        sourceHandle: connection.sourceHandle ?? null,
+        targetHandle: connection.targetHandle ?? null,
+      }),
+    [graph.nodes, registry],
+  );
+
   const onNodeClick = useCallback(
     (_: unknown, node: Node) => {
       store.selectNode(node.id);
@@ -109,14 +139,43 @@ export function Canvas({ onEdgeError, skipAnimations = false }: CanvasProps) {
 
   const onPaneClick = useCallback(() => {
     store.selectNode(null);
+    setSelectedNodeIds(new Set());
+    setSelectedEdgeIds(new Set());
   }, [store]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      for (const change of changes) {
-        if (change.type === "position" && change.position && change.id) {
-          store.setNodePosition(change.id, change.position);
+      const selectChanges: Array<{ type: string; id: string; selected: boolean }> = [];
+      for (const op of nodeChangeOps(changes)) {
+        if (op.op === "beginDrag") {
+          store.beginDrag(op.id);
+        } else if (op.op === "endDrag") {
+          store.endDrag();
+        } else if (op.op === "position") {
+          store.setNodePosition(op.id, op.position);
+        } else {
+          selectChanges.push({ type: "select", id: op.id, selected: op.selected });
+          if (op.selected) {
+            store.selectNode(op.id);
+          }
         }
+      }
+      if (selectChanges.length > 0) {
+        setSelectedNodeIds((prev) => applySelectionChanges(prev, selectChanges));
+      }
+    },
+    [store],
+  );
+
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      const ids = removedIds(changes);
+      if (ids.length > 0) {
+        store.deleteEdges(ids);
+      }
+      const selects = changes.filter((change) => change.type === "select");
+      if (selects.length > 0) {
+        setSelectedEdgeIds((prev) => applySelectionChanges(prev, selects));
       }
     },
     [store],
@@ -133,7 +192,7 @@ export function Canvas({ onEdgeError, skipAnimations = false }: CanvasProps) {
     <div
       className={skipAnimations ? "skip-animations h-full w-full" : "h-full w-full"}
       style={{
-        background: canvasBg,
+        background: `var(--machina-canvas-bg, ${canvasBg})`,
         ["--machina-anim-ms" as string]: `${animationDelayMs(skipAnimations)}ms`,
       }}
     >
@@ -142,15 +201,23 @@ export function Canvas({ onEdgeError, skipAnimations = false }: CanvasProps) {
         edges={flowEdges}
         nodeTypes={nodeTypes}
         onConnect={onConnect}
+        isValidConnection={isValidConnection}
         onNodeClick={onNodeClick}
         onNodeDoubleClick={onNodeDoubleClick}
         onPaneClick={onPaneClick}
         onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        proOptions={{ hideAttribution: true }}
+        deleteKeyCode={null}
+        connectionRadius={20}
         colorMode="dark"
       >
         <Background gap={16} color="#1a1a1a" />
         <Controls />
-        <MiniMap nodeColor="#333" maskColor="rgb(12,12,12,0.8)" />
+        <MiniMap
+          nodeColor={() => minimapNodeFill(rootStyle())}
+          maskColor={minimapMaskColor(rootStyle())}
+        />
       </ReactFlow>
     </div>
   );
