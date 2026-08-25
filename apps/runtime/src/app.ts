@@ -3,6 +3,7 @@ import type { AgentAction, MachinaProject, SimulationPlan } from "@machina/core"
 import { openEngineFromProject, type EngineRun } from "@machina/engine";
 import type { ThinkFn } from "@machina/simulation";
 import { toWs } from "./instrumentation.ts";
+import { createSettingsHandler } from "./settings.ts";
 import { attachWebSocket } from "./ws.ts";
 
 type CompileResult =
@@ -16,6 +17,9 @@ export type RuntimeDeps = {
   openEngineFromProject?: typeof openEngineFromProject;
   think?: ThinkFn;
   loadExampleProject?: () => Promise<MachinaProject>;
+  homedir?: string;
+  fetch?: typeof fetch;
+  env?: NodeJS.Dict<string>;
 };
 
 type Stance = "watch" | "god" | "possess";
@@ -53,12 +57,21 @@ function runPath(url: string): { runId: string; action: string } | null {
 
 export function createApp(deps: RuntimeDeps): RuntimeApp {
   const runs = new Map<string, RunRecord>();
+  const handleSettings = createSettingsHandler({
+    homedir: deps.homedir,
+    fetchImpl: deps.fetch ?? globalThis.fetch,
+    env: deps.env ?? process.env,
+  });
 
   const server = createServer(async (req, res) => {
     const method = req.method ?? "GET";
     const url = req.url ?? "/";
 
     try {
+      if (await handleSettings(req, res)) {
+        return;
+      }
+
       if (method === "GET" && url === "/examples/world") {
         if (!deps.loadExampleProject) {
           sendJson(res, 503, { message: "Example loader not configured." });

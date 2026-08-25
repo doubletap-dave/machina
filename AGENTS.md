@@ -42,7 +42,7 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | **3 Dead Channel Lite** | **✅ Done** | **`master` @ `993fef8`** | **77/77 (`pnpm test`)** |
 | Studio canvas-ops | ⏳ In progress | `master` @ `71704b3` | 81/81 (`@machina/studio`) |
 | Studio port-language | ✅ Done | `master` @ `ba311ca` | 9/9 (`@machina/ui`) · 89/89 (`@machina/studio`) |
-| Studio models | ⏳ Task 2 | list-models verify | 14/14 core · 23/23 engine |
+| Studio models | ⏳ Task 4 | Task 3 settings HTTP | 23/23 runtime · 8/8 client · 23/23 engine |
 
 Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md`
 
@@ -98,13 +98,14 @@ packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.
 packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
 packages/engine/          # openEngine, openEngineFromProject — in-process world runner
-                          # credentials.ts — ~/.machina/credentials.json (Task 1)
+                          # credentials.ts — ~/.machina/credentials.json (Task 1); env overlay helpers
                           # list-models.ts — listAndVerify (Task 2; injectable fetch)
-packages/client/          # MachinaClient — browser-safe HTTP + WebSocket wrapper
+packages/client/          # MachinaClient — HTTP + WS; settings: getSettings, putProviderKey, deleteProvider, refreshProvider, putDefault
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
                           # canvas-ops — src/canvas/; lib/undo-stack.ts, lib/graph-edit.ts
                           # port-language — src/canvas/port-symbol.tsx; connect-highlight.ts
 apps/runtime/             # HTTP/CLI drive @machina/engine (app.ts, serve.ts, run-project.ts, cli.ts)
+apps/runtime/src/settings.ts # Task 3 ✅ — GET/PUT/DELETE /settings/* (no apiKey on GET)
 apps/runtime/src/instrumentation.ts  # Lane 2b ✅ — toWs bridge
 examples/dead-channel-lite/ # Wave 3 ✅ — two nations, 20-turn proof
 docs/reports/             # Implementation reports (required)
@@ -132,9 +133,9 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/persistence`:** `saveProject`, `loadProject`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
 
-**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`, `loadCredentials`, `saveCredentials`, `publicProviderView`, `last4`, `restrictToOwner`, `ProviderId`, `CredentialsFile`, `listAndVerify`, `ListModelsResult`
+**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`, `loadCredentials`, `saveCredentials`, `publicProviderView`, `last4`, `restrictToOwner`, `ProviderId`, `CredentialsFile`, `listAndVerify`, `ListModelsResult`, `apiKeyFromEnv`, `isProviderId`, `PROVIDER_IDS`, `PROVIDER_ENV`
 
-**`@machina/client`:** `MachinaClient`, `CompileOutcome` (local; do not import `@machina/engine`)
+**`@machina/client`:** `MachinaClient`, `CompileOutcome`, `SettingsModels`, `PublicProviderSlice` (local; do not import `@machina/engine`)
 
 **`@machina/runtime`:** `createApp`, `runCli`, `runProjectHeadless`, WebSocket on `/ws`, CLI `machina run <dir> --turns N` · `machina test`
 
@@ -150,7 +151,8 @@ pnpm dev:studio                        # Studio only
 pnpm dev:runtime                       # Runtime API only
 pnpm test                              # 77/77 automated tests
 pnpm --filter @machina/engine test     # 23/23 in-process engine
-pnpm --filter @machina/client test     # HTTP + WS wrapper against runtime listen(0)
+pnpm --filter @machina/runtime test    # 23/23 including settings HTTP
+pnpm --filter @machina/client test     # 8/8 HTTP + WS + settings methods
 
 # Add a dependency to a package (example)
 cd packages/graph

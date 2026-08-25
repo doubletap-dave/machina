@@ -7,6 +7,36 @@ import { credentialsUnreadableCopy } from "@machina/core";
 
 export type ProviderId = "anthropic" | "openai" | "openrouter" | "perplexity";
 
+export const PROVIDER_IDS: readonly ProviderId[] = [
+  "anthropic",
+  "openai",
+  "openrouter",
+  "perplexity",
+];
+
+export const PROVIDER_ENV: Record<ProviderId, string> = {
+  anthropic: "ANTHROPIC_API_KEY",
+  openai: "OPENAI_API_KEY",
+  openrouter: "OPENROUTER_API_KEY",
+  perplexity: "PERPLEXITY_API_KEY",
+};
+
+export function isProviderId(id: string): id is ProviderId {
+  return (PROVIDER_IDS as readonly string[]).includes(id);
+}
+
+export function apiKeyFromEnv(
+  id: ProviderId,
+  env: NodeJS.Dict<string> = process.env,
+): string | undefined {
+  const raw = env[PROVIDER_ENV[id]];
+  if (typeof raw !== "string") {
+    return undefined;
+  }
+  const trimmed = raw.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
 export type CachedModel = { id: string; name: string };
 
 export type ProviderRecord = {

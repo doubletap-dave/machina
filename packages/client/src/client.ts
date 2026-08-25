@@ -10,6 +10,24 @@ export type CompileOutcome =
   | { ok: true; plan: SimulationPlan }
   | { ok: false; errors: MachinaError[] };
 
+export type ProviderId = "anthropic" | "openai" | "openrouter" | "perplexity";
+
+export type CachedModel = { id: string; name: string };
+
+export type PublicProviderSlice = {
+  configured: boolean;
+  verified: boolean;
+  last4: string;
+  models: CachedModel[];
+  message?: string;
+};
+
+export type SettingsModels = {
+  default: { provider: ProviderId; model: string } | null;
+  providers: Record<string, PublicProviderSlice>;
+  message?: string;
+};
+
 function defaultWsUrl(baseUrl: string): string {
   const trimmed = baseUrl.replace(/\/$/, "");
   return `${trimmed.replace(/^http/, "ws")}/ws`;
@@ -93,6 +111,33 @@ export class MachinaClient {
     return this.#readOk(response);
   }
 
+  async getSettings(): Promise<SettingsModels> {
+    const response = await fetch(`${this.#baseUrl}/settings/models`);
+    return this.#readOk(response);
+  }
+
+  async putProviderKey(
+    id: ProviderId,
+    apiKey: string,
+  ): Promise<PublicProviderSlice> {
+    return this.#sendJson("PUT", `/settings/providers/${id}`, { apiKey });
+  }
+
+  async deleteProvider(id: ProviderId): Promise<void> {
+    await this.#sendJson("DELETE", `/settings/providers/${id}`);
+  }
+
+  async refreshProvider(id: ProviderId): Promise<PublicProviderSlice> {
+    return this.#sendJson("POST", `/settings/providers/${id}/refresh`);
+  }
+
+  async putDefault(body: {
+    provider: ProviderId;
+    model: string;
+  }): Promise<{ default: { provider: ProviderId; model: string } }> {
+    return this.#sendJson("PUT", "/settings/default", body);
+  }
+
   subscribe(onMessage: (msg: InstrumentMsg) => void): () => void {
     const ws = new WebSocket(this.#wsUrl);
     const onData = (event: MessageEvent) => {
@@ -115,19 +160,27 @@ export class MachinaClient {
   }
 
   async #postJson<T>(path: string, body?: unknown): Promise<T> {
+    return this.#sendJson("POST", path, body);
+  }
+
+  async #sendJson<T>(method: string, path: string, body?: unknown): Promise<T> {
     const response = await fetch(`${this.#baseUrl}${path}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
+      method,
+      headers: body === undefined ? undefined : { "content-type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     return this.#readOk(response);
   }
 
   async #readOk<T>(response: Response): Promise<T> {
-    const body = (await response.json()) as { message?: unknown };
-    if (!response.ok) {
-      throw new Error(failMessage(body));
+    if (response.status === 204) {
+      return undefined as T;
     }
-    return body as T;
+    const text = await response.text();
+    const parsed = text ? (JSON.parse(text) as { message?: unknown }) : {};
+    if (!response.ok) {
+      throw new Error(failMessage(parsed));
+    }
+    return parsed as T;
   }
 }

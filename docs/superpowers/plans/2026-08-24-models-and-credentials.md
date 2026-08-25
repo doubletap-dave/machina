@@ -63,9 +63,9 @@ Path `join(homedir(), ".machina", "credentials.json")`. `homedir` injectable. `p
 
 Routes exactly as spec. `PUT` saves key then list-models (inject fetch). Failed verify still saves key, `verifiedAt` null. `DELETE` clears default if it pointed at that provider. `PUT /settings/default` requires verified + model in cache.
 
-- [ ] **Step 1: Tests** GET after PUT never includes `apiKey` (`JSON.stringify(body).includes("apiKey") === false`). 401 stub → `This key was refused.` Env `OPENAI_API_KEY` → configured without writing file (mock env in test).
+- [x] **Step 1: Tests** GET after PUT never includes `apiKey` (`JSON.stringify(body).includes("apiKey") === false`). 401 stub → `This key was refused.` Env `OPENAI_API_KEY` → configured without writing file (mock env in test).
 
-- [ ] **Step 2: Implement. PASS. Commit** `feat: add runtime http for llm settings`
+- [x] **Step 2: Implement. PASS. Commit** `feat: add runtime http for llm settings`
 
 ---
 

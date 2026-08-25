@@ -1,7 +1,14 @@
+import { access, mkdtemp } from "node:fs/promises";
 import type { Server } from "node:http";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { InstrumentMsg, MachinaProject } from "@machina/core";
-import { openEngineFromProject } from "@machina/engine";
+import { keyRefusedCopy } from "@machina/core";
+import {
+  credentialsPath,
+  openEngineFromProject,
+} from "@machina/engine";
 import { compile } from "@machina/graph";
 import { createRegistry } from "@machina/node-sdk";
 import { registerCoreKinds } from "@machina/plugin-core";
@@ -47,19 +54,38 @@ function realCompile(project: MachinaProject) {
   return { errors: [] as [], plan: result.plan };
 }
 
-function runtimeDeps() {
+function jsonResponse(status: number, body: unknown): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function stubFetch(status: number, body: unknown): typeof fetch {
+  return (async () => jsonResponse(status, body)) as typeof fetch;
+}
+
+function runtimeDeps(extra?: {
+  homedir?: string;
+  fetch?: typeof fetch;
+  env?: NodeJS.Dict<string>;
+}) {
   return {
     compile: realCompile,
     openEngineFromProject,
     think: waitThink,
     loadExampleProject: async () => project,
+    homedir: extra?.homedir,
+    fetch: extra?.fetch,
+    env: extra?.env ?? {},
   };
 }
 
 async function withServer(
   fn: (client: MachinaClient) => Promise<void>,
+  extra?: Parameters<typeof runtimeDeps>[0],
 ): Promise<void> {
-  const server: Server = createApp(runtimeDeps());
+  const server: Server = createApp(runtimeDeps(extra));
   await new Promise<void>((resolve) => {
     server.listen(0, resolve);
   });
@@ -120,6 +146,87 @@ describe("MachinaClient", () => {
       } finally {
         unsubscribe();
       }
+    });
+  });
+
+  it("getSettings JSON never includes apiKey", async () => {
+    const homedir = await mkdtemp(join(tmpdir(), "machina-client-"));
+    await withServer(
+      async (client) => {
+        const settings = await client.getSettings();
+        expect(JSON.stringify(settings).includes("apiKey")).toBe(false);
+        expect(settings.default).toBeNull();
+      },
+      { homedir, fetch: stubFetch(200, { data: [] }), env: {} },
+    );
+  });
+
+  it("putProviderKey, putDefault, refreshProvider, and deleteProvider round-trip", async () => {
+    const homedir = await mkdtemp(join(tmpdir(), "machina-client-"));
+    const apiKey = "sk-test-abcd";
+    await withServer(
+      async (client) => {
+        const saved = await client.putProviderKey("openai", apiKey);
+        expect(JSON.stringify(saved).includes("apiKey")).toBe(false);
+        expect(saved.verified).toBe(true);
+        expect(saved.last4).toBe("abcd");
+
+        await client.putDefault({ provider: "openai", model: "gpt-4o" });
+        const afterDefault = await client.getSettings();
+        expect(afterDefault.default).toEqual({
+          provider: "openai",
+          model: "gpt-4o",
+        });
+
+        const refreshed = await client.refreshProvider("openai");
+        expect(refreshed.verified).toBe(true);
+
+        await client.deleteProvider("openai");
+        const afterDelete = await client.getSettings();
+        expect(afterDelete.default).toBeNull();
+        expect(afterDelete.providers.openai.configured).toBe(false);
+      },
+      {
+        homedir,
+        fetch: stubFetch(200, { data: [{ id: "gpt-4o" }] }),
+        env: {},
+      },
+    );
+  });
+
+  it("putProviderKey surfaces This key was refused on 401 stub", async () => {
+    const homedir = await mkdtemp(join(tmpdir(), "machina-client-"));
+    await withServer(
+      async (client) => {
+        const slice = await client.putProviderKey("openai", "sk-bad-abcd");
+        expect(slice.message).toBe(keyRefusedCopy());
+        expect(slice.verified).toBe(false);
+        expect(JSON.stringify(slice).includes("apiKey")).toBe(false);
+      },
+      {
+        homedir,
+        fetch: stubFetch(401, { error: "unauthorized" }),
+        env: {},
+      },
+    );
+  });
+
+  it("OPENAI_API_KEY makes getSettings configured without writing the file", async () => {
+    const homedir = await mkdtemp(join(tmpdir(), "machina-client-"));
+    await withServer(
+      async (client) => {
+        const settings = await client.getSettings();
+        expect(settings.providers.openai.configured).toBe(true);
+        expect(JSON.stringify(settings).includes("apiKey")).toBe(false);
+      },
+      {
+        homedir,
+        fetch: stubFetch(200, { data: [] }),
+        env: { OPENAI_API_KEY: "sk-env-abcd" },
+      },
+    );
+    await expect(access(credentialsPath({ homedir }))).rejects.toMatchObject({
+      code: "ENOENT",
     });
   });
 });

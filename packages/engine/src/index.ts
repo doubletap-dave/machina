@@ -4,10 +4,14 @@ export {
 } from "./engine.ts";
 export type { CompileOutcome, EngineRun, MachinaEngine } from "./engine.ts";
 export {
+  apiKeyFromEnv,
   credentialsPath,
   emptyCredentials,
+  isProviderId,
   last4,
   loadCredentials,
+  PROVIDER_ENV,
+  PROVIDER_IDS,
   publicProviderView,
   restrictToOwner,
   saveCredentials,
