@@ -2,6 +2,8 @@
 
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import type { PortDef } from "@machina/core";
+import { portLanguage } from "@machina/ui";
+import { PortSymbol } from "@/canvas/port-symbol";
 
 type MachinaNodeData = {
   label: string;
@@ -20,28 +22,36 @@ export function MachinaFlowNode({ data }: NodeProps) {
           <div key={key} className="relative flex items-center justify-between text-xs text-neutral-400">
             {port.dir === "in" ? (
               <>
-                <Handle
-                  id={key}
-                  type="target"
-                  position={Position.Left}
-                  className="!h-2 !w-2 !border-neutral-500 !bg-neutral-300"
-                />
+                <PortHandle handleId={key} port={port} />
                 <span className="pl-3">{port.label}</span>
               </>
             ) : (
               <>
                 <span className="pr-3">{port.label}</span>
-                <Handle
-                  id={key}
-                  type="source"
-                  position={Position.Right}
-                  className="!h-2 !w-2 !border-neutral-500 !bg-neutral-300"
-                />
+                <PortHandle handleId={key} port={port} />
               </>
             )}
           </div>
         ))}
       </div>
     </div>
+  );
+}
+
+function PortHandle({ handleId, port }: { handleId: string; port: PortDef }) {
+  const lang = portLanguage(port.type);
+  return (
+    <Handle
+      id={handleId}
+      type={port.dir === "in" ? "target" : "source"}
+      position={port.dir === "in" ? Position.Left : Position.Right}
+      title={lang.label}
+      aria-label={lang.label}
+      data-port-type={port.type}
+      className="!flex !h-3.5 !w-3.5 !items-center !justify-center"
+      style={{ backgroundColor: lang.color, borderColor: lang.color }}
+    >
+      <PortSymbol id={lang.symbol} />
+    </Handle>
   );
 }
