@@ -29,11 +29,12 @@ async function grepDeadChannelHacks(): Promise<string[]> {
     for (const entry of entries) {
       const full = join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === "node_modules") continue;
+        if (entry.name === "node_modules" || entry.name === ".next") continue;
         await walk(full);
         continue;
       }
       if (!/\.(ts|tsx|js|jsx)$/.test(entry.name)) continue;
+      if (/\.test\.(ts|tsx|js|jsx)$/.test(entry.name)) continue;
       const text = await readFile(full, "utf-8");
       if (pattern.test(text)) {
         matches.push(full);

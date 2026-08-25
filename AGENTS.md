@@ -39,7 +39,7 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | **2 — Parallel lanes** | **✅ Merged** | **`WAVE2` → `3c7aa10`** | **64/64 (`pnpm test`)** |
 | 2a Presets + LLM compose | ✅ Merged | `lane/2a-presets` @ `cfd00d3` | 4/4 plugin-core · 9/9 graph · 8/8 studio |
 | 2b RUN instrumentation | ✅ Merged | `lane/2b-run` @ `d98301f` | 12/12 sim · 10/10 studio · 7/7 runtime |
-| **3 Dead Channel Lite** | **✅ Done** | **`master` @ `993fef8`** | **67/67 (`pnpm test`)** |
+| **3 Dead Channel Lite** | **✅ Done** | **`master` @ `993fef8`** | **73/73 (`pnpm test`)** |
 
 Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md`
 
@@ -94,6 +94,7 @@ packages/simulation/      # Lane 1b ✅ — rng.ts kernel.ts from-plan.ts types.
                           # Lane 2b ✅ — instrument.ts (InstrumentMsg, onInstrument callback)
 packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
+packages/engine/          # openEngine, openEngineFromProject — in-process world runner
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
 apps/runtime/             # Lane 1f ✅ — app.ts ws.ts cli.ts (bin: machina)
 apps/runtime/src/instrumentation.ts  # Lane 2b ✅ — toWs bridge
@@ -123,6 +124,8 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/persistence`:** `saveProject`, `loadProject`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
 
+**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`
+
 **`@machina/runtime`:** `createApp`, `runCli`, WebSocket on `/ws`, CLI `machina run <dir> --turns N` · `machina test`
 
 ---
@@ -135,7 +138,9 @@ pnpm install
 pnpm dev                               # browser: Studio @ :3000 + runtime @ :4000
 pnpm dev:studio                        # Studio only
 pnpm dev:runtime                       # Runtime API only
-pnpm test                              # 67/67 automated tests
+pnpm test                              # 83/83 automated tests
+pnpm --filter @machina/engine test     # 5/5 in-process engine
+pnpm run:example                       # headless 20-turn Dead Channel Lite via CLI
 
 # Add a dependency to a package (example)
 cd packages/graph
@@ -197,10 +202,12 @@ pnpm install
 
 ## Package names
 
-`@machina/core` · `@machina/node-sdk` · `@machina/ui` · `@machina/graph` · `@machina/simulation` · `@machina/agents` · `@machina/persistence` · `@machina/plugin-core` · `@machina/studio` · `@machina/runtime`
+`@machina/core` · `@machina/node-sdk` · `@machina/ui` · `@machina/graph` · `@machina/simulation` · `@machina/agents` · `@machina/persistence` · `@machina/engine` · `@machina/plugin-core` · `@machina/studio` · `@machina/runtime`
 
 ---
 
 ## Open concerns
 
 - Vitest: `vitest.workspace.ts` is deprecated — migrate to `test.projects` in root `vitest.config.ts` before Vitest 4.
+- Studio: project Save-to-disk UI not wired; God intervention editor minimal; RUN possess uses placeholder packet until kernel emits `possess-wait` over WS.
+- Engine: non-possess think without `opts.think` errors until Task 11 wires a chat-model Think path; `getSummary().cost` stays 0 until then.

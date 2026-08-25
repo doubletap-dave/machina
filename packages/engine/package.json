@@ -1,0 +1,19 @@
+{
+  "name": "@machina/engine",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@machina/core": "workspace:*",
+    "@machina/graph": "workspace:*",
+    "@machina/node-sdk": "workspace:*",
+    "@machina/persistence": "workspace:*",
+    "@machina/plugin-core": "workspace:*",
+    "@machina/simulation": "workspace:*"
+  }
+}
