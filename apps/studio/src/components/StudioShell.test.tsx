@@ -116,5 +116,8 @@ describe("StudioShell chrome", () => {
     expect(within(bar).getByText("Cost $0")).toBeInTheDocument();
     expect(within(bar).getByText("Errors 0")).toBeInTheDocument();
     expect(within(bar).getByRole("checkbox", { name: "Skip animations" })).toBeInTheDocument();
+    expect(within(bar).getByLabelText("Theme")).toBeInTheDocument();
+    expect(within(bar).getByLabelText("UI font")).toBeInTheDocument();
+    expect(within(bar).getByLabelText("Mono font")).toBeInTheDocument();
   });
 });

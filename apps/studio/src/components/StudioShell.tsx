@@ -5,8 +5,10 @@ import type { Preset } from "@machina/plugin-core";
 import { useCallback, useState } from "react";
 import { useProjectSnapshot } from "@/lib/project-store-context";
 import { loadStudioPrefs } from "@/lib/studio-prefs";
+import { resolveMonoFont, resolveUiFont } from "@/lib/studio-fonts";
 import { getStudioClient } from "@/lib/machina-client";
 import { starterProject } from "@/templates/starter";
+import { AppearanceMenu } from "./AppearanceMenu";
 import { CanvasProvider } from "./Canvas";
 import { CommandPalette, useCommandPaletteShortcut } from "./CommandPalette";
 import { DescribePanel } from "./DescribePanel";
@@ -27,7 +29,9 @@ const MODE_LABEL: Record<StudioMode, string> = {
 
 export function StudioShell() {
   const store = useProjectSnapshot();
-  const [prefs] = useState(() => loadStudioPrefs());
+  const [prefs, setPrefs] = useState(() => loadStudioPrefs());
+  const uiFace = resolveUiFont(prefs.uiFont);
+  const monoFace = resolveMonoFont(prefs.monoFont);
   const [mode, setMode] = useState<StudioMode>("build");
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -101,6 +105,8 @@ export function StudioShell() {
   return (
     <ThemeRoot
       theme={prefs.theme}
+      uiFontFamily={uiFace.family}
+      monoFontFamily={monoFace.family}
       className="flex h-screen flex-col"
       style={{
         background: `var(--machina-canvas-bg, ${canvasBg})`,
@@ -217,14 +223,17 @@ export function StudioShell() {
         <span>Events {events}</span>
         <span>Cost ${cost}</span>
         <span>Errors {errors}</span>
-        <label className="ml-auto flex items-center gap-2 text-neutral-300">
-          <input
-            type="checkbox"
-            checked={skipAnimations}
-            onChange={(event) => setSkipAnimations(event.target.checked)}
-          />
-          Skip animations
-        </label>
+        <div className="ml-auto flex flex-wrap items-center gap-4">
+          <AppearanceMenu prefs={prefs} onChange={setPrefs} />
+          <label className="flex items-center gap-2" style={{ color: "var(--machina-text)" }}>
+            <input
+              type="checkbox"
+              checked={skipAnimations}
+              onChange={(event) => setSkipAnimations(event.target.checked)}
+            />
+            Skip animations
+          </label>
+        </div>
       </footer>
 
       <CommandPalette

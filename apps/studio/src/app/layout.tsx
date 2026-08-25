@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/fira-code/400.css";
+import "@fontsource/cascadia-code/400.css";
+import "@fontsource/iosevka/400.css";
+import "@fontsource/victor-mono/400.css";
+import "@fontsource/dejavu-mono/400.css";
+import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
