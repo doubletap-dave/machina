@@ -4,6 +4,8 @@ import type { MachinaEvent, ObservationPacket } from "@machina/core";
 
 export type WsMessage =
   | { type: "turn"; turn: number }
+  | { type: "node-active"; nodeId: string }
+  | { type: "edge-pulse"; from: string; to: string; portType: string }
   | { type: "event"; event: MachinaEvent }
   | { type: "possess-wait"; nodeId: string; packet: ObservationPacket }
   | { type: "error"; message: string };
@@ -36,6 +38,10 @@ export function attachWebSocket(server: Server): WebSocketServer {
 
   server.on("turn", (payload: { runId: string; turn: number }) => {
     broadcast(clients, { type: "turn", turn: payload.turn });
+  });
+
+  server.on("instrument", (payload: WsMessage) => {
+    broadcast(clients, payload);
   });
 
   server.on("event", (event: MachinaEvent) => {

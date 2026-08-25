@@ -1,6 +1,8 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import { randomUUID } from "node:crypto";
 import type { AgentAction, MachinaProject, SimulationPlan } from "@machina/core";
+import { openEngineFromProject, type EngineRun } from "@machina/engine";
+import type { ThinkFn } from "@machina/simulation";
+import { toWs } from "./instrumentation.ts";
 import { attachWebSocket } from "./ws.ts";
 
 type CompileResult =
@@ -11,21 +13,16 @@ type CompileFn = (project: MachinaProject) => CompileResult;
 
 export type RuntimeDeps = {
   compile: CompileFn;
-  createKernel?: (plan: SimulationPlan, seed: number) => unknown;
-  saveProject?: (dir: string, project: MachinaProject) => Promise<void>;
-  loadProject?: (dir: string) => Promise<MachinaProject>;
+  openEngineFromProject?: typeof openEngineFromProject;
+  think?: ThinkFn;
+  loadExampleProject?: () => Promise<MachinaProject>;
 };
 
 type Stance = "watch" | "god" | "possess";
 
 type RunRecord = {
-  id: string;
-  turn: number;
+  engineRun: EngineRun;
   paused: boolean;
-  stance: Stance;
-  possessNodeId?: string;
-  seed: number;
-  errors: unknown[];
 };
 
 export type RuntimeApp = Server & {
@@ -62,6 +59,16 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
     const url = req.url ?? "/";
 
     try {
+      if (method === "GET" && url === "/examples/world") {
+        if (!deps.loadExampleProject) {
+          sendJson(res, 503, { message: "Example loader not configured." });
+          return;
+        }
+        const project = await deps.loadExampleProject();
+        sendJson(res, 200, project);
+        return;
+      }
+
       if (method === "POST" && url === "/compile") {
         const project = await readJson<MachinaProject>(req);
         const result = deps.compile(project);
@@ -80,25 +87,26 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
           stance?: Stance;
           possessNodeId?: string;
         }>(req);
-        const compileResult = deps.compile(body.project);
-        if (compileResult.errors.length > 0) {
-          sendJson(res, 400, { errors: compileResult.errors });
+        if (!deps.openEngineFromProject) {
+          sendJson(res, 503, { message: "Runtime piece not ready." });
           return;
         }
-        if (deps.createKernel && compileResult.plan) {
-          deps.createKernel(compileResult.plan, body.seed);
+        const engine = deps.openEngineFromProject(body.project, { think: deps.think });
+        const compiled = engine.compile();
+        if (!compiled.ok) {
+          sendJson(res, 400, { errors: compiled.errors });
+          return;
         }
-        const id = randomUUID();
-        runs.set(id, {
-          id,
-          turn: 0,
-          paused: false,
-          stance: body.stance ?? "watch",
-          possessNodeId: body.possessNodeId,
+        const engineRun = await engine.start({
           seed: body.seed,
-          errors: [],
+          stance: body.stance,
+          possessNodeId: body.possessNodeId,
         });
-        sendJson(res, 200, { id });
+        engineRun.subscribe((msg) => {
+          server.emit("instrument", toWs(msg));
+        });
+        runs.set(engineRun.id, { engineRun, paused: false });
+        sendJson(res, 200, { id: engineRun.id });
         return;
       }
 
@@ -115,12 +123,7 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
       }
 
       if (method === "GET" && parsed.action === "") {
-        sendJson(res, 200, {
-          id: run.id,
-          turn: run.turn,
-          cost: 0,
-          errors: run.errors,
-        });
+        sendJson(res, 200, run.engineRun.getSummary());
         return;
       }
 
@@ -131,23 +134,24 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
 
       switch (parsed.action) {
         case "pause":
+          run.engineRun.pause();
           run.paused = true;
           sendJson(res, 200, { ok: true });
           return;
         case "resume":
+          run.engineRun.resume();
           run.paused = false;
           sendJson(res, 200, { ok: true });
           return;
         case "step": {
-          run.turn += 1;
-          sendJson(res, 200, { turn: run.turn });
-          server.emit("turn", { runId: run.id, turn: run.turn });
+          const { turn } = await run.engineRun.step();
+          sendJson(res, 200, { turn });
+          server.emit("turn", { runId: run.engineRun.id, turn });
           return;
         }
         case "stance": {
           const body = await readJson<{ mode: Stance; nodeId?: string }>(req);
-          run.stance = body.mode;
-          run.possessNodeId = body.nodeId;
+          run.engineRun.setStance(body.mode, body.nodeId);
           sendJson(res, 200, { ok: true });
           return;
         }
@@ -162,20 +166,26 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
           return;
         }
         case "possess/action": {
-          await readJson<AgentAction>(req);
+          const action = await readJson<AgentAction>(req);
+          await run.engineRun.submitAction(action);
           sendJson(res, 200, { ok: true });
           return;
         }
         case "rewind": {
           const body = await readJson<{ turn: number }>(req);
-          run.turn = body.turn;
+          run.engineRun.rewind(body.turn);
           sendJson(res, 200, { ok: true });
           return;
         }
         default:
           sendJson(res, 404, { message: "Not found." });
       }
-    } catch {
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Request failed.";
+      if (message === "The world is paused.") {
+        sendJson(res, 409, { message });
+        return;
+      }
       sendJson(res, 500, { message: "Request failed." });
     }
   }) as RuntimeApp;

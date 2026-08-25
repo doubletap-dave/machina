@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 import type { MachinaProject } from "@machina/core";
+import type { ThinkFn } from "@machina/simulation";
+import { runProjectHeadless } from "./run-project.ts";
 
 export type CliDeps = {
   loadProject?: (dir: string) => Promise<MachinaProject>;
   step?: (runId: string) => Promise<{ turn: number }>;
+  runHeadless?: (dir: string, turns: number) => Promise<number>;
+  think?: ThinkFn;
   log?: (line: string) => void;
 };
 
@@ -34,18 +38,27 @@ export async function runCli(
     if (!Number.isFinite(turns) || turns < 1) {
       throw new Error("Usage: machina run <dir> --turns <n>");
     }
-    if (!deps.loadProject) {
-      throw new Error("Runtime piece not ready.");
+
+    if (deps.runHeadless) {
+      const finalTurn = await deps.runHeadless(dir, turns);
+      write(`turns=${finalTurn}`);
+      return lines.join("\n");
     }
-    if (!deps.step) {
-      throw new Error("Runtime piece not ready.");
+
+    if (deps.loadProject && deps.step) {
+      await deps.loadProject(dir);
+      const runId = "cli";
+      for (let index = 0; index < turns; index += 1) {
+        await deps.step(runId);
+      }
+      write(`turns=${turns}`);
+      return lines.join("\n");
     }
-    await deps.loadProject(dir);
-    const runId = "cli";
-    for (let index = 0; index < turns; index += 1) {
-      await deps.step(runId);
-    }
-    write(`turns=${turns}`);
+
+    const finalTurn = await runProjectHeadless(dir, turns, {
+      think: deps.think,
+    });
+    write(`turns=${finalTurn}`);
     return lines.join("\n");
   }
 

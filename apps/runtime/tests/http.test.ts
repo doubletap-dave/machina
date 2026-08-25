@@ -1,6 +1,10 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { Server } from "node:http";
+import { resolve } from "node:path";
 import type { MachinaProject } from "@machina/core";
+import { openEngineFromProject } from "@machina/engine";
+import { loadProject } from "@machina/persistence";
+import type { ThinkFn } from "@machina/simulation";
 import { createApp } from "../src/app.ts";
 
 const project: MachinaProject = {
@@ -34,6 +38,22 @@ const plan = {
   perception: [],
   analysis: [],
 };
+
+const waitThink: ThinkFn = async ({ packet }) => ({
+  actorId: packet.actorId,
+  type: "wait",
+  params: {},
+});
+
+const exampleDir = resolve(import.meta.dirname, "../../../examples/dead-channel-lite");
+
+function engineDeps() {
+  return {
+    compile: () => ({ errors: [] as [], plan }),
+    openEngineFromProject,
+    think: waitThink,
+  };
+}
 
 async function withServer(
   deps: Parameters<typeof createApp>[0],
@@ -96,64 +116,129 @@ describe("HTTP control plane", () => {
     );
   });
 
-  it("allows interventions only while paused", async () => {
+  it("returns 503 when the engine opener is missing", async () => {
     await withServer(
       {
         compile: () => ({ errors: [], plan }),
       },
       async (base) => {
-        const create = await fetch(`${base}/runs`, {
+        const response = await fetch(`${base}/runs`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ project, seed: 1 }),
         });
-        expect(create.status).toBe(200);
-        const { id } = (await create.json()) as { id: string };
+        expect(response.status).toBe(503);
+        expect((await response.json()).message).toBe("Runtime piece not ready.");
+      },
+    );
+  });
 
-        const blocked = await fetch(`${base}/runs/${id}/interventions`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ kind: "set", path: "x", value: 1 }),
-        });
-        expect(blocked.status).toBe(409);
-        expect((await blocked.json()).message).toBe(
-          "Pause the world before changing it.",
-        );
+  it("allows interventions only while paused", async () => {
+    await withServer(engineDeps(), async (base) => {
+      const create = await fetch(`${base}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ project, seed: 1 }),
+      });
+      expect(create.status).toBe(200);
+      const { id } = (await create.json()) as { id: string };
 
-        await fetch(`${base}/runs/${id}/pause`, { method: "POST" });
+      const blocked = await fetch(`${base}/runs/${id}/interventions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind: "set", path: "x", value: 1 }),
+      });
+      expect(blocked.status).toBe(409);
+      expect((await blocked.json()).message).toBe(
+        "Pause the world before changing it.",
+      );
 
-        const allowed = await fetch(`${base}/runs/${id}/interventions`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ kind: "set", path: "x", value: 1 }),
-        });
-        expect(allowed.status).toBe(200);
+      await fetch(`${base}/runs/${id}/pause`, { method: "POST" });
+
+      const allowed = await fetch(`${base}/runs/${id}/interventions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ kind: "set", path: "x", value: 1 }),
+      });
+      expect(allowed.status).toBe(200);
+    });
+  });
+
+  it("returns example world when configured", async () => {
+    await withServer(
+      {
+        compile: () => ({ errors: [], plan }),
+        loadExampleProject: async () => project,
+      },
+      async (base) => {
+        const response = await fetch(`${base}/examples/world`);
+        expect(response.status).toBe(200);
+        const body = await response.json();
+        expect(body.name).toBe("Test");
       },
     );
   });
 
   it("steps a run and returns turn summary", async () => {
-    await withServer(
-      {
-        compile: () => ({ errors: [], plan }),
-      },
-      async (base) => {
-        const create = await fetch(`${base}/runs`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ project, seed: 42 }),
-        });
-        const { id } = (await create.json()) as { id: string };
+    await withServer(engineDeps(), async (base) => {
+      const create = await fetch(`${base}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ project, seed: 42 }),
+      });
+      const { id } = (await create.json()) as { id: string };
 
-        const step = await fetch(`${base}/runs/${id}/step`, { method: "POST" });
-        expect(step.status).toBe(200);
-        expect((await step.json()).turn).toBe(1);
+      const step = await fetch(`${base}/runs/${id}/step`, { method: "POST" });
+      expect(step.status).toBe(200);
+      expect((await step.json()).turn).toBe(1);
 
-        const summary = await fetch(`${base}/runs/${id}`);
-        expect(summary.status).toBe(200);
-        const body = await summary.json();
-        expect(body).toEqual({ id, turn: 1, cost: 0, errors: [] });
-      },
-    );
+      const summary = await fetch(`${base}/runs/${id}`);
+      expect(summary.status).toBe(200);
+      const body = await summary.json();
+      expect(body).toEqual({ id, turn: 1, cost: 0, errors: [] });
+    });
+  });
+
+  it("accepts a possess action and finishes the turn", async () => {
+    const world = await loadProject(exampleDir);
+    await withServer(engineDeps(), async (base) => {
+      const create = await fetch(`${base}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          project: world,
+          seed: 1,
+          stance: "possess",
+          possessNodeId: "atlantic-federation",
+        }),
+      });
+      expect(create.status).toBe(200);
+      const { id } = (await create.json()) as { id: string };
+
+      const stepping = fetch(`${base}/runs/${id}/step`, { method: "POST" });
+      const raced = await Promise.race([
+        stepping.then(() => "step" as const),
+        new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 80)),
+      ]);
+      expect(raced).toBe("timeout");
+
+      const action = await fetch(`${base}/runs/${id}/possess/action`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          actorId: "atlantic-federation",
+          type: "wait",
+          params: {},
+        }),
+      });
+      expect(action.status).toBe(200);
+
+      const step = await stepping;
+      expect(step.status).toBe(200);
+      expect((await step.json()).turn).toBe(1);
+
+      const summary = await fetch(`${base}/runs/${id}`);
+      expect((await summary.json()).turn).toBe(1);
+    });
   });
 });

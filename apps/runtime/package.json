@@ -11,14 +11,15 @@
   },
   "dependencies": {
     "@machina/core": "workspace:*",
+    "@machina/engine": "workspace:*",
     "@machina/graph": "workspace:*",
     "@machina/node-sdk": "workspace:*",
     "@machina/plugin-core": "workspace:*",
+    "@machina/simulation": "workspace:*",
+    "@machina/persistence": "workspace:*",
     "ws": "^8.18.1"
   },
   "devDependencies": {
-    "@machina/persistence": "workspace:*",
-    "@machina/simulation": "workspace:*",
     "tsx": "^4.19.3",
     "@types/ws": "^8.5.14"
   }

@@ -96,7 +96,7 @@ packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
 packages/engine/          # openEngine, openEngineFromProject — in-process world runner
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
-apps/runtime/             # Lane 1f ✅ — app.ts ws.ts cli.ts (bin: machina)
+apps/runtime/             # HTTP/CLI drive @machina/engine (app.ts, serve.ts, run-project.ts, cli.ts)
 apps/runtime/src/instrumentation.ts  # Lane 2b ✅ — toWs bridge
 examples/dead-channel-lite/ # Wave 3 ✅ — two nations, 20-turn proof
 docs/reports/             # Implementation reports (required)
@@ -126,7 +126,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`
 
-**`@machina/runtime`:** `createApp`, `runCli`, WebSocket on `/ws`, CLI `machina run <dir> --turns N` · `machina test`
+**`@machina/runtime`:** `createApp`, `runCli`, `runProjectHeadless`, WebSocket on `/ws`, CLI `machina run <dir> --turns N` · `machina test`
 
 ---
 
@@ -208,3 +208,4 @@ pnpm install
 ## Open concerns
 
 - Vitest: `vitest.workspace.ts` is deprecated — migrate to `test.projects` in root `vitest.config.ts` before Vitest 4.
+- Production runtime/CLI have no default `think`; missing model errors in English until Task 11 wires a chat model.

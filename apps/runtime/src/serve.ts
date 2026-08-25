@@ -1,11 +1,15 @@
 import { compile } from "@machina/graph";
+import { openEngineFromProject } from "@machina/engine";
+import { loadProject } from "@machina/persistence";
 import { createRegistry } from "@machina/node-sdk";
 import { registerCoreKinds } from "@machina/plugin-core";
+import { resolve } from "node:path";
 import { createApp } from "./app.ts";
 
 const registry = createRegistry();
 registerCoreKinds(registry);
 
+const exampleDir = resolve(import.meta.dirname, "../../../examples/dead-channel-lite");
 const port = Number(process.env.MACHINA_RUNTIME_PORT ?? process.env.PORT ?? 4000);
 
 const app = createApp({
@@ -16,6 +20,8 @@ const app = createApp({
     }
     return { errors: [], plan: result.plan };
   },
+  openEngineFromProject,
+  loadExampleProject: () => loadProject(exampleDir),
 });
 
 app.listen(port, () => {
