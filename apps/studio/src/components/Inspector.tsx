@@ -9,7 +9,8 @@ import { KindAuthorForm } from "@/kinds/KindAuthorForm";
 import { browserKindLibrary } from "@/kinds/kind-library-client";
 import { findNodeById } from "./Canvas";
 
-const PERSONALITY_FIELDS = ["aggression", "paranoia", "cooperation", "risk"] as const;
+const TRAIT_KEYS = new Set(["aggression", "paranoia", "cooperation", "risk"]);
+const AGENT_LLM_KEYS = new Set(["llmProvider", "llmModel"]);
 const PROVIDERS = ["anthropic", "openai", "openrouter", "perplexity"] as const;
 const DEFAULT_OPTION = "Use machine default";
 
@@ -46,99 +47,24 @@ export function Inspector() {
   }
 
   const def = registry.getOrThrow(selected.kind, selected.version);
-  const config = selected.config as Record<string, number | string | undefined>;
-  const providerValue =
-    typeof config.llmProvider === "string" && config.llmProvider.length > 0
-      ? config.llmProvider
-      : "";
-  const modelValue =
-    typeof config.llmModel === "string" && config.llmModel.length > 0 ? config.llmModel : "";
-  const providerModels = providerValue
-    ? (settings?.providers[providerValue]?.models ?? [])
-    : [];
+  const config = selected.config as Record<string, number | string | boolean | undefined>;
+  const isAgent = selected.kind === "cognition.agent";
+  const fields = isAgent
+    ? def.fields.filter((field) => !AGENT_LLM_KEYS.has(field.key))
+    : def.fields;
+  const onChange = (patch: Record<string, unknown>) =>
+    store.updateNodeConfig(selected.id, patch);
 
   return (
     <aside className="w-64 border-l border-neutral-800 bg-neutral-950 p-3">
       <h2 className="mb-1 text-xs font-semibold uppercase tracking-wide text-neutral-500">Inspector</h2>
       <p className="mb-4 text-sm font-medium text-neutral-100">{def.metadata.name}</p>
 
-      {selected.kind === "cognition.personality" ? (
-        <div className="space-y-3">
-          {PERSONALITY_FIELDS.map((field) => (
-            <label key={field} className="block text-xs text-neutral-400">
-              <span className="mb-1 block capitalize">{field}</span>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={Number(config[field] ?? 50)}
-                onChange={(event) =>
-                  store.updateNodeConfig(selected.id, { [field]: Number(event.target.value) })
-                }
-                className="w-full"
-              />
-            </label>
-          ))}
-        </div>
-      ) : selected.kind === "cognition.agent" ? (
-        <div className="space-y-3">
-          <label className="block text-xs text-neutral-400">
-            Language model provider
-            <select
-              className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
-              value={providerValue}
-              onChange={(event) => {
-                const next = event.target.value;
-                if (!next) {
-                  store.updateNodeConfig(selected.id, {
-                    llmProvider: undefined,
-                    llmModel: undefined,
-                  });
-                  return;
-                }
-                store.updateNodeConfig(selected.id, { llmProvider: next, llmModel: undefined });
-              }}
-            >
-              <option value="">{DEFAULT_OPTION}</option>
-              {PROVIDERS.map((id) => (
-                <option key={id} value={id}>
-                  {id}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-xs text-neutral-400">
-            Language model
-            <select
-              className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
-              value={modelValue}
-              onChange={(event) => {
-                const next = event.target.value;
-                if (!next) {
-                  store.updateNodeConfig(selected.id, {
-                    llmProvider: undefined,
-                    llmModel: undefined,
-                  });
-                  return;
-                }
-                store.updateNodeConfig(selected.id, { llmModel: next });
-              }}
-            >
-              <option value="">{DEFAULT_OPTION}</option>
-              {providerModels.map((model) => (
-                <option key={model.id} value={model.id}>
-                  {model.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+      {isAgent ? <AgentLlmFields config={config} settings={settings} onChange={onChange} /> : null}
+      {fields.length === 0 && !isAgent ? (
+        <p className="text-xs text-neutral-500">No editable fields for this node yet.</p>
       ) : (
-        <ManifestFields
-          fields={store.getKinds().find((kind) => kind.id === selected.kind)?.fields ?? []}
-          config={config}
-          onChange={(patch) => store.updateNodeConfig(selected.id, patch)}
-        />
+        <ManifestFields fields={fields} config={config} onChange={onChange} />
       )}
 
       {selected.subgraphId ? (
@@ -154,6 +80,73 @@ export function Inspector() {
   );
 }
 
+function AgentLlmFields({
+  config,
+  settings,
+  onChange,
+}: {
+  config: Record<string, number | string | boolean | undefined>;
+  settings: SettingsModels | null;
+  onChange: (patch: Record<string, unknown>) => void;
+}) {
+  const providerValue =
+    typeof config.llmProvider === "string" && config.llmProvider.length > 0
+      ? config.llmProvider
+      : "";
+  const modelValue =
+    typeof config.llmModel === "string" && config.llmModel.length > 0 ? config.llmModel : "";
+  const providerModels = providerValue ? (settings?.providers[providerValue]?.models ?? []) : [];
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-xs text-neutral-400">
+        Language model provider
+        <select
+          className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+          value={providerValue}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (!next) {
+              onChange({ llmProvider: undefined, llmModel: undefined });
+              return;
+            }
+            onChange({ llmProvider: next, llmModel: undefined });
+          }}
+        >
+          <option value="">{DEFAULT_OPTION}</option>
+          {PROVIDERS.map((id) => (
+            <option key={id} value={id}>
+              {id}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-xs text-neutral-400">
+        Language model
+        <select
+          className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+          value={modelValue}
+          onChange={(event) => {
+            const next = event.target.value;
+            if (!next) {
+              onChange({ llmProvider: undefined, llmModel: undefined });
+              return;
+            }
+            onChange({ llmModel: next });
+          }}
+        >
+          <option value="">{DEFAULT_OPTION}</option>
+          {providerModels.map((model) => (
+            <option key={model.id} value={model.id}>
+              {model.name}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
 function ManifestFields({
   fields,
   config,
@@ -164,7 +157,7 @@ function ManifestFields({
   onChange: (patch: Record<string, unknown>) => void;
 }) {
   if (fields.length === 0) {
-    return <p className="text-xs text-neutral-500">No editable fields for this node yet.</p>;
+    return null;
   }
 
   return (
@@ -197,6 +190,21 @@ function ManifestFields({
                   </option>
                 ))}
               </select>
+            </label>
+          );
+        }
+        if (field.type === "number" && TRAIT_KEYS.has(field.key)) {
+          return (
+            <label key={field.key} className="block text-xs text-neutral-400">
+              {field.label}
+              <input
+                type="range"
+                min={0}
+                max={100}
+                className="w-full"
+                value={Number(config[field.key] ?? field.default ?? 50)}
+                onChange={(event) => onChange({ [field.key]: Number(event.target.value) })}
+              />
             </label>
           );
         }

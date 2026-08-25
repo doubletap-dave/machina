@@ -26,20 +26,24 @@ afterEach(() => {
   getSettings.mockReset();
 });
 
-function SeededAgentInspector() {
+function SeededKindInspector({ kind }: { kind: string }) {
   const store = useProjectSnapshot();
   const [ready, setReady] = useState(false);
 
   useLayoutEffect(() => {
-    const node = store.addNode("cognition.agent", { x: 0, y: 0 });
+    const node = store.addNode(kind, { x: 0, y: 0 });
     store.selectNode(node.id);
     setReady(true);
-  }, [store]);
+  }, [kind, store]);
 
   if (!ready) {
     return null;
   }
   return <Inspector />;
+}
+
+function SeededAgentInspector() {
+  return <SeededKindInspector kind="cognition.agent" />;
 }
 
 describe("Inspector agent LLM fields", () => {
@@ -117,5 +121,47 @@ describe("Inspector agent LLM fields", () => {
       (candidate) => candidate.kind === "cognition.agent",
     );
     expect(node?.config).toMatchObject({ llmProvider: "openai", llmModel: "gpt-4o" });
+  });
+});
+
+describe("Inspector fields from kind definitions", () => {
+  it("shows Period for a clock and does not show the empty-fields copy", async () => {
+    getSettings.mockResolvedValue({ default: null, providers: {} });
+
+    render(
+      <ProjectStoreProvider registry={createStudioRegistry()}>
+        <SeededKindInspector kind="control.clock" />
+      </ProjectStoreProvider>,
+    );
+
+    expect(await screen.findByLabelText(/period/i)).toBeInTheDocument();
+    expect(screen.queryByText("No editable fields for this node yet.")).not.toBeInTheDocument();
+  });
+
+  it("shows a Statement textbox for a goal", async () => {
+    getSettings.mockResolvedValue({ default: null, providers: {} });
+
+    render(
+      <ProjectStoreProvider registry={createStudioRegistry()}>
+        <SeededKindInspector kind="cognition.goal" />
+      </ProjectStoreProvider>,
+    );
+
+    expect(await screen.findByRole("textbox", { name: /statement/i })).toBeInTheDocument();
+  });
+
+  it("renders personality traits as 0–100 range sliders", async () => {
+    getSettings.mockResolvedValue({ default: null, providers: {} });
+
+    render(
+      <ProjectStoreProvider registry={createStudioRegistry()}>
+        <SeededKindInspector kind="cognition.personality" />
+      </ProjectStoreProvider>,
+    );
+
+    const aggression = await screen.findByLabelText(/aggression/i);
+    expect(aggression).toHaveAttribute("type", "range");
+    expect(aggression).toHaveAttribute("min", "0");
+    expect(aggression).toHaveAttribute("max", "100");
   });
 });
