@@ -98,6 +98,36 @@ describe("openEngine", () => {
     await expect(run.step()).rejects.toThrow("The world is paused.");
     expect(run.getSummary().turn).toBe(turnAfterFail);
   });
+
+  it("applies a God intervention on the next step", async () => {
+    const engine = await openEngine(dir, { think: waitThink });
+    const run = await engine.start({ seed: 7 });
+    run.pause();
+    run.applyIntervention({
+      path: "actors.atlantic-federation.resources.economy",
+      value: 10,
+      noticeable: false,
+    });
+    const { turn } = await run.step();
+    expect(turn).toBe(1);
+  });
+
+  it("refuses the next step if think fails after a God edit", async () => {
+    const engine = await openEngine(dir);
+    const run = await engine.start({ seed: 1 });
+    run.pause();
+    run.applyIntervention({
+      path: "actors.atlantic-federation.resources.economy",
+      value: 10,
+      noticeable: false,
+    });
+    await expect(run.step()).rejects.toThrow(
+      "No language model is configured. Possess the agent or set an API key.",
+    );
+    const turnAfterFail = run.getSummary().turn;
+    await expect(run.step()).rejects.toThrow("The world is paused.");
+    expect(run.getSummary().turn).toBe(turnAfterFail);
+  });
 });
 
 describe("openEngineFromProject", () => {

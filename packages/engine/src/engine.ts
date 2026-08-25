@@ -105,11 +105,12 @@ function createRun(
       }
       try {
         await kernel.runTurn();
-        pendingIntervention = false;
         return { turn: kernel.getTruth().turn };
       } catch (error) {
         kernel.paused = true;
         throw error;
+      } finally {
+        pendingIntervention = false;
       }
     },
     pause() {
