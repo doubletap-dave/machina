@@ -1,6 +1,6 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStudioRegistry } from "@/lib/create-studio-registry";
 import { ProjectStoreProvider } from "@/lib/project-store-context";
 import { Library } from "./Library";
@@ -11,10 +11,15 @@ vi.mock("./Canvas", () => ({
   findNodeById: () => undefined,
 }));
 
+const { compile, startRun } = vi.hoisted(() => ({
+  compile: vi.fn(),
+  startRun: vi.fn(),
+}));
+
 vi.mock("@/lib/machina-client", () => ({
   getStudioClient: () => ({
-    compile: vi.fn(),
-    startRun: vi.fn(),
+    compile,
+    startRun,
     step: vi.fn(),
     pause: vi.fn(),
     rewind: vi.fn(),
@@ -93,6 +98,13 @@ describe("StudioShell chrome", () => {
     cleanup();
   });
 
+  beforeEach(() => {
+    compile.mockReset();
+    startRun.mockReset();
+    compile.mockResolvedValue({ ok: true, plan: {} });
+    startRun.mockResolvedValue({ id: "run-1" });
+  });
+
   it("uses sentence-case Build Run Analyze Configure", () => {
     renderShell();
     expect(screen.getByRole("button", { name: "Build" })).toBeInTheDocument();
@@ -144,5 +156,25 @@ describe("StudioShell chrome", () => {
 
     await user.click(screen.getByRole("button", { name: "Analyze" }));
     expect(screen.getByTestId("studio-canvas")).toBeInTheDocument();
+  });
+
+  it("keeps RunPanel mounted on Build so a started run survives the tab switch", async () => {
+    const user = userEvent.setup();
+    renderShell();
+
+    expect(screen.getByText("Select a node to inspect it.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start run", hidden: true })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^Run$/ }));
+    await user.click(await screen.findByRole("button", { name: "Start run" }));
+    expect(await screen.findByRole("button", { name: "Restart run" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Build" }));
+    expect(screen.getByText("Select a node to inspect it.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Restart run", hidden: true })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /^Run$/ }));
+    expect(screen.getByRole("button", { name: "Restart run" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Start run" })).not.toBeInTheDocument();
   });
 });

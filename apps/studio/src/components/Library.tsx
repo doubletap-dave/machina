@@ -36,13 +36,7 @@ export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryPr
   }, [registry, revision, store]);
 
   return (
-    <aside
-      className="flex h-full w-56 flex-col border-r p-3"
-      style={{
-        background: "var(--machina-panel-bg)",
-        borderColor: "var(--machina-panel-border)",
-      }}
-    >
+    <aside className="flex h-full min-h-0 flex-1 flex-col p-3">
       <div className="flex-1 space-y-4 overflow-y-auto">
         <section>
           <h3 className="mb-1 text-xs" style={chromeMuted}>

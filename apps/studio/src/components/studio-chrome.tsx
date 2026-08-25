@@ -95,7 +95,18 @@ export function StudioWorkspace({
         </div>
         <main className="relative min-w-0 flex-1">{canvas}</main>
         <aside className="flex w-72 shrink-0 flex-col border-l" style={panelChrome}>
-          {mode === "build" ? inspector : runPanel}
+          <div
+            className={mode === "build" ? "flex min-h-0 flex-1 flex-col" : "hidden"}
+            aria-hidden={mode !== "build"}
+          >
+            {inspector}
+          </div>
+          <div
+            className={mode === "build" ? "hidden" : "flex min-h-0 flex-1 flex-col"}
+            aria-hidden={mode === "build"}
+          >
+            {runPanel}
+          </div>
         </aside>
       </div>
     </>

@@ -26,4 +26,10 @@ describe("studio chrome tokens", () => {
       expect(source, file).not.toMatch(/\bneutral-\d{3}\b/);
     }
   });
+
+  it("does not nest a second w-56 or border-r on Library", () => {
+    const source = readFileSync(join(ROOT, "components/Library.tsx"), "utf8");
+    expect(source).not.toMatch(/\bw-56\b/);
+    expect(source).not.toMatch(/\bborder-r\b/);
+  });
 });
