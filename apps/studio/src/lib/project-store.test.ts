@@ -225,6 +225,93 @@ describe("createProjectStore", () => {
     ).toBe(false);
   });
 
+  it("duplicateNodes remaps nation preset parent-graph cabinet wires; originals unchanged", () => {
+    const store = createProjectStore(testRegistry());
+    const inserted = store.insertPreset(nationPreset("Atlantic Federation"), { x: 20, y: 30 });
+    const actor = inserted[0]!;
+    const originalSubgraphId = actor.subgraphId!;
+    const originalCross = store
+      .getCurrentGraph()
+      .edges.filter((edge) => edge.targetNode === actor.id);
+    expect(originalCross).toHaveLength(3);
+    const originalCrossIds = originalCross.map((edge) => edge.id);
+
+    const copyIds = store.duplicateNodes([actor.id]);
+    const copy = store.getCurrentGraph().nodes.find((node) => node.id === copyIds[0]);
+    const copiedCross = store
+      .getCurrentGraph()
+      .edges.filter((edge) => edge.targetNode === copy?.id);
+    expect(copiedCross).toHaveLength(3);
+
+    expect(
+      originalCrossIds.every((id) => store.getCurrentGraph().edges.some((edge) => edge.id === id)),
+    ).toBe(true);
+    expect(store.getCurrentGraph().nodes.find((node) => node.id === actor.id)?.subgraphId).toBe(
+      originalSubgraphId,
+    );
+
+    const copyCabinet = store.getProject().graphs.find((graph) => graph.id === copy?.subgraphId);
+    const originalCabinet = store
+      .getProject()
+      .graphs.find((graph) => graph.id === originalSubgraphId);
+    const copyCabinetIds = new Set(copyCabinet?.nodes.map((node) => node.id));
+    const originalCabinetIds = new Set(originalCabinet?.nodes.map((node) => node.id));
+
+    for (const edge of copiedCross) {
+      expect(copyCabinetIds.has(edge.sourceNode)).toBe(true);
+      expect(originalCabinetIds.has(edge.sourceNode)).toBe(false);
+    }
+    for (const edge of originalCross) {
+      expect(originalCabinetIds.has(edge.sourceNode)).toBe(true);
+      expect(copyCabinetIds.has(edge.sourceNode)).toBe(false);
+    }
+  });
+
+  it("deleteNodes in cabinet drops parent-graph wires to that node; undo restores them", () => {
+    const store = createProjectStore(testRegistry());
+    const inserted = store.insertPreset(nationPreset("Atlantic Federation"), { x: 20, y: 30 });
+    store.enterSubgraph(inserted[0]!.id);
+    const personality = store
+      .getCurrentGraph()
+      .nodes.find((node) => node.kind === "cognition.personality")!;
+    const parentGraphId = store.getCurrentGraph().parentGraphId!;
+    const parentBefore = store.getProject().graphs.find((graph) => graph.id === parentGraphId)!;
+    const wires = parentBefore.edges.filter(
+      (edge) => edge.sourceNode === personality.id || edge.targetNode === personality.id,
+    );
+    expect(wires.length).toBeGreaterThan(0);
+    const wireIds = wires.map((edge) => edge.id);
+
+    store.deleteNodes([personality.id]);
+
+    const parentAfter = store.getProject().graphs.find((graph) => graph.id === parentGraphId)!;
+    expect(
+      parentAfter.edges.some(
+        (edge) => edge.sourceNode === personality.id || edge.targetNode === personality.id,
+      ),
+    ).toBe(false);
+    expect(store.getCurrentGraph().nodes.find((node) => node.id === personality.id)).toBeUndefined();
+
+    store.undo();
+
+    const parentRestored = store.getProject().graphs.find((graph) => graph.id === parentGraphId)!;
+    for (const id of wireIds) {
+      expect(parentRestored.edges.some((edge) => edge.id === id)).toBe(true);
+    }
+    expect(store.getCurrentGraph().nodes.find((node) => node.id === personality.id)).toBeDefined();
+  });
+
+  it("deleteEdges removes only those edges; undo restores them", () => {
+    const store = createProjectStore(testRegistry());
+    store.deleteEdges(["clock-world"]);
+    expect(store.getCurrentGraph().edges.find((edge) => edge.id === "clock-world")).toBeUndefined();
+    expect(store.getCurrentGraph().edges.find((edge) => edge.id === "world-inspector")).toBeDefined();
+    store.undo();
+    expect(store.getCurrentGraph().edges.find((edge) => edge.id === "clock-world")?.id).toBe(
+      "clock-world",
+    );
+  });
+
   it("51st undo-worthy mutation drops the oldest snapshot", () => {
     const store = createProjectStore(testRegistry());
     for (let i = 0; i < 51; i++) {

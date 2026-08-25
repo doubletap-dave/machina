@@ -13,9 +13,11 @@ export function deleteNodesFromProject(
 
   const dropGraphs = descendantGraphIds(project, removed);
   graph.nodes = graph.nodes.filter((node) => !idSet.has(node.id));
-  graph.edges = graph.edges.filter(
-    (edge) => !idSet.has(edge.sourceNode) && !idSet.has(edge.targetNode),
-  );
+  for (const candidate of project.graphs) {
+    candidate.edges = candidate.edges.filter(
+      (edge) => !idSet.has(edge.sourceNode) && !idSet.has(edge.targetNode),
+    );
+  }
   project.graphs = project.graphs.filter((candidate) => !dropGraphs.has(candidate.id));
   return removed.map((node) => node.id);
 }
@@ -66,23 +68,51 @@ export function duplicateNodesInProject(
       nodeIdMap.get(node.id)!,
       extraGraphs,
       graphIdMap,
+      nodeIdMap,
       copiedOldGraphIds,
     );
   }
 
-  const newEdges: MachinaEdge[] = graph.edges
-    .filter((edge) => nodeIdMap.has(edge.sourceNode) && nodeIdMap.has(edge.targetNode))
-    .map((edge) => ({
-      ...edge,
-      id: crypto.randomUUID(),
-      sourceNode: nodeIdMap.get(edge.sourceNode)!,
-      targetNode: nodeIdMap.get(edge.targetNode)!,
-    }));
+  const graphByNewId = new Map(extraGraphs.map((extra) => [extra.id, extra]));
+  for (const src of project.graphs) {
+    const dest = destinationGraph(src.id, graph.id, graph, graphIdMap, graphByNewId);
+    if (!dest) {
+      continue;
+    }
+    for (const edge of [...src.edges]) {
+      if (!nodeIdMap.has(edge.sourceNode) || !nodeIdMap.has(edge.targetNode)) {
+        continue;
+      }
+      dest.edges.push(remapEdge(edge, nodeIdMap));
+    }
+  }
 
   graph.nodes.push(...copies);
-  graph.edges.push(...newEdges);
   project.graphs = [...project.graphs, ...extraGraphs];
   return copies.map((node) => node.id);
+}
+
+function destinationGraph(
+  srcGraphId: string,
+  currentGraphId: string,
+  currentGraph: GraphDocument,
+  graphIdMap: Map<string, string>,
+  extraById: Map<string, GraphDocument>,
+): GraphDocument | undefined {
+  if (srcGraphId === currentGraphId) {
+    return currentGraph;
+  }
+  const mapped = graphIdMap.get(srcGraphId);
+  return mapped ? extraById.get(mapped) : undefined;
+}
+
+function remapEdge(edge: MachinaEdge, nodeIdMap: Map<string, string>): MachinaEdge {
+  return {
+    ...edge,
+    id: crypto.randomUUID(),
+    sourceNode: nodeIdMap.get(edge.sourceNode)!,
+    targetNode: nodeIdMap.get(edge.targetNode)!,
+  };
 }
 
 function descendantGraphIds(project: MachinaProject, nodes: MachinaNode[]): Set<string> {
@@ -134,6 +164,7 @@ function copyGraphTree(
   newParentNodeId: string,
   extra: GraphDocument[],
   graphIdMap: Map<string, string>,
+  nodeIdMap: Map<string, string>,
   copiedOldGraphIds: Set<string>,
 ): void {
   if (copiedOldGraphIds.has(oldGraphId)) {
@@ -145,10 +176,9 @@ function copyGraphTree(
   }
   copiedOldGraphIds.add(oldGraphId);
 
-  const innerNodeMap = new Map<string, string>();
   const newNodes: MachinaNode[] = src.nodes.map((node) => {
     const id = crypto.randomUUID();
-    innerNodeMap.set(node.id, id);
+    nodeIdMap.set(node.id, id);
     return {
       ...node,
       id,
@@ -157,21 +187,12 @@ function copyGraphTree(
     };
   });
 
-  const newEdges: MachinaEdge[] = src.edges
-    .filter((edge) => innerNodeMap.has(edge.sourceNode) && innerNodeMap.has(edge.targetNode))
-    .map((edge) => ({
-      ...edge,
-      id: crypto.randomUUID(),
-      sourceNode: innerNodeMap.get(edge.sourceNode)!,
-      targetNode: innerNodeMap.get(edge.targetNode)!,
-    }));
-
   extra.push({
     id: newGraphId,
     parentGraphId: newParentGraphId,
     parentNodeId: newParentNodeId,
     nodes: newNodes,
-    edges: newEdges,
+    edges: [],
   });
 
   for (const node of src.nodes) {
@@ -183,9 +204,10 @@ function copyGraphTree(
       node.subgraphId,
       assignId(graphIdMap, node.subgraphId),
       newGraphId,
-      innerNodeMap.get(node.id)!,
+      nodeIdMap.get(node.id)!,
       extra,
       graphIdMap,
+      nodeIdMap,
       copiedOldGraphIds,
     );
   }
@@ -195,7 +217,7 @@ function copyGraphTree(
       continue;
     }
     const mappedParentNode = child.parentNodeId
-      ? (innerNodeMap.get(child.parentNodeId) ?? newParentNodeId)
+      ? (nodeIdMap.get(child.parentNodeId) ?? newParentNodeId)
       : newParentNodeId;
     copyGraphTree(
       project,
@@ -205,6 +227,7 @@ function copyGraphTree(
       mappedParentNode,
       extra,
       graphIdMap,
+      nodeIdMap,
       copiedOldGraphIds,
     );
   }
