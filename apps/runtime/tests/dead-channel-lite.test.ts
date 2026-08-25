@@ -29,7 +29,14 @@ async function grepDeadChannelHacks(): Promise<string[]> {
     for (const entry of entries) {
       const full = join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === "node_modules") continue;
+        if (
+          entry.name === "node_modules" ||
+          entry.name === ".next" ||
+          entry.name === "dist" ||
+          entry.name === ".git"
+        ) {
+          continue;
+        }
         if (full.replaceAll("\\", "/").endsWith("packages/engine/tests")) continue;
         await walk(full);
         continue;
