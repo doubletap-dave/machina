@@ -45,7 +45,21 @@ describe("StudioShell library", () => {
 
     expect(screen.getByText("Personality")).toBeInTheDocument();
     expect(screen.getByText("Atlantic Federation")).toBeInTheDocument();
+    expect(screen.getByText("Behavior")).toBeInTheDocument();
+    expect(screen.queryByText("Cognition")).not.toBeInTheDocument();
+    expect(screen.queryByText("Library")).not.toBeInTheDocument();
     expect(screen.queryByText("cognition.personality")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New world" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Example world" })).toBeInTheDocument();
+    expect(screen.getAllByRole("heading").map((el) => el.textContent)).toEqual([
+      "Presets",
+      "Templates",
+      "Actors",
+      "World",
+      "Behavior",
+      "Systems",
+      "Output",
+    ]);
 
     await user.click(screen.getByRole("button", { name: "Personality" }));
     expect(addedKind).toBe("cognition.personality");
