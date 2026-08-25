@@ -130,7 +130,7 @@ describe("compile full fixture", () => {
             node("world", "entities.world"),
             node("actor", "entities.actor", 1, { name: "Nation" }),
             node("personality", "cognition.personality"),
-            node("goal", "cognition.goal"),
+            node("goal", "cognition.goal", 1, { statement: "Survive" }),
             node("memory", "cognition.memory"),
             node("perception", "perception.perception"),
             node("agent", "cognition.agent"),

@@ -1,7 +1,7 @@
-import { emptyAgentPacket, type SimulationPlan, type Wire } from "@machina/core";
+import { type MachinaNode, type SimulationPlan, type Wire } from "@machina/core";
 import type { NodeDefinition, NodeRegistry } from "@machina/node-sdk";
 import type { FlatGraph } from "./flatten.ts";
-import type { MachinaNode } from "@machina/core";
+import { resolveAgentPacket } from "./resolve-packet.ts";
 
 type NodeContext = {
   nodesById: Map<string, MachinaNode>;
@@ -72,21 +72,27 @@ export function buildSimulationPlan(
           wires: inboundWires(node.id),
         });
         break;
-      case "agent":
+      case "agent": {
+        const actorRef = actorRefFor(node.id);
         plan.agents.push({
           nodeId: node.id,
-          actorRef: actorRefFor(node.id),
+          actorRef,
           graphRef: `agent:${node.id}`,
           packetWires: packetWires(node.id),
-          packet: emptyAgentPacket(),
+          packet: resolveAgentPacket(node.id, {
+            nodesById: ctx.nodesById,
+            edges: ctx.edges,
+            actorRef,
+          }),
         });
         break;
+      }
       case "analysis":
         plan.analysis.push({
           nodeId: node.id,
           kind: node.kind,
-          config: {},
-          wires: [],
+          config: node.config,
+          wires: inboundWires(node.id),
         });
         break;
     }

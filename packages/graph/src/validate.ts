@@ -8,6 +8,8 @@ import {
 } from "@machina/core";
 import type { NodeRegistry } from "@machina/node-sdk";
 import {
+  actorNeedsNameCopy,
+  goalHasNoStatementCopy,
   missingClockCopy,
   unknownKindCopy,
   versionMismatchCopy,
@@ -140,8 +142,34 @@ export function validateFlatGraph(
     edges: flat.edges,
     registry,
   });
+  const errors = [...kindErrors, ...edgeErrors];
 
-  return [...kindErrors, ...edgeErrors];
+  for (const node of flat.nodes) {
+    if (node.kind === "entities.actor") {
+      const name = String((node.config as { name?: string }).name ?? "").trim();
+      if (name === "") {
+        errors.push({
+          code: "ACTOR_NAME",
+          message: actorNeedsNameCopy(),
+          nodeId: node.id,
+        });
+      }
+    }
+    if (node.kind === "cognition.goal") {
+      const statement = String(
+        (node.config as { statement?: string }).statement ?? "",
+      ).trim();
+      if (statement === "") {
+        errors.push({
+          code: "GOAL_STATEMENT",
+          message: goalHasNoStatementCopy(),
+          nodeId: node.id,
+        });
+      }
+    }
+  }
+
+  return errors;
 }
 
 export function edgeToWire(
