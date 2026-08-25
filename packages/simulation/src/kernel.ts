@@ -41,6 +41,11 @@ function observationNoise(rng: { next(): number }, fog?: number): number {
   return rng.next() > 0.5 ? amplitude : -amplitude;
 }
 
+function observationConfidence(fog?: number): number {
+  const value = 1 - (fog === undefined ? 50 : fog) / 100;
+  return Math.min(1, Math.max(0, value));
+}
+
 function buildPacket(
   state: TrueWorldState,
   actorId: string,
@@ -56,7 +61,7 @@ function buildPacket(
       {
         attribute: "enemy.economy",
         value: 50 + observationNoise(rng, fog),
-        confidence: 0.5,
+        confidence: observationConfidence(fog),
         ageTurns: 0,
         source: "osint",
       },

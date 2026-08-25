@@ -116,6 +116,36 @@ describe("createKernelFromPlan", () => {
     expect(observed).toBe(50);
   });
 
+  it("scales observation confidence with perception fog", async () => {
+    const confidenceAt = async (fog: number) => {
+      const fogged: SimulationPlan = {
+        ...plan,
+        agents: [
+          {
+            nodeId: "agent-a",
+            actorRef: "a",
+            graphRef: "g1",
+            packetWires: [],
+            packet: emptyAgentPacket(),
+          },
+        ],
+        perception: [{ nodeId: "perc", config: { fog }, wires: [] }],
+      };
+      let confidence: number | undefined;
+      const kernel = createKernelFromPlan(fogged, {
+        seed: 1,
+        think: async ({ packet }) => {
+          confidence = packet.observations[0]?.confidence;
+          return { actorId: packet.actorId, type: "wait", params: {} };
+        },
+      });
+      await kernel.runTurn();
+      return confidence;
+    };
+    expect(await confidenceAt(0)).toBe(1);
+    expect(await confidenceAt(100)).toBe(0);
+  });
+
   it("emits event logs when logger record is events", async () => {
     const logged: SimulationPlan = {
       ...plan,
