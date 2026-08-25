@@ -14,6 +14,15 @@ export type { SimulationPlan } from "./plan.ts";
 export type { ObservationPacket, AgentAction } from "./packets.ts";
 export type { MachinaEvent } from "./events.ts";
 export type { InstrumentMsg } from "./instrument.ts";
+export type { KindFieldType, KindField, KindManifest } from "./kind-manifest.ts";
+export { canonicalKindJson, kindHash } from "./kind-hash.ts";
+export {
+  kindNoRuntimeCopy,
+  kindPinMismatchCopy,
+  kindUnpinnedFileCopy,
+  kindPinMissingFileCopy,
+  kindIdReservedCopy,
+} from "./kind-english.ts";
 export {
   keyRefusedCopy,
   providerUnreachableCopy,
