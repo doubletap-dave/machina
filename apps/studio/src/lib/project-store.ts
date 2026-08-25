@@ -108,6 +108,7 @@ export function createProjectStore(registry: NodeRegistry) {
     },
 
     insertPreset(preset: Preset, origin: { x: number; y: number }): MachinaNode[] {
+      record();
       const { rootNodes, rootEdges, extraGraphs } = materializePreset(
         preset,
         currentGraphId,
@@ -137,6 +138,7 @@ export function createProjectStore(registry: NodeRegistry) {
 
     addNode(kind: string, position: { x: number; y: number }): MachinaNode {
       const def = registry.getOrThrow(kind, 1);
+      record();
       const node: MachinaNode = {
         id: crypto.randomUUID(),
         kind,
@@ -184,6 +186,7 @@ export function createProjectStore(registry: NodeRegistry) {
         return err;
       }
 
+      record();
       graph.edges.push({ ...edge, id: crypto.randomUUID() });
       emit();
       return null;

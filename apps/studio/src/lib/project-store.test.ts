@@ -278,6 +278,71 @@ describe("createProjectStore", () => {
     store.undo();
     expect(clockConfig(store)).toEqual({ period: "month" });
   });
+
+  it("addNode then undo removes the node", () => {
+    const store = createProjectStore(testRegistry());
+    const before = store.getCurrentGraph().nodes.length;
+    const node = store.addNode("cognition.personality", { x: 10, y: 20 });
+
+    expect(store.getCurrentGraph().nodes.some((candidate) => candidate.id === node.id)).toBe(true);
+    store.undo();
+    expect(store.getCurrentGraph().nodes).toHaveLength(before);
+    expect(store.getCurrentGraph().nodes.find((candidate) => candidate.id === node.id)).toBeUndefined();
+  });
+
+  it("addEdge then undo removes the legal edge", () => {
+    const store = createProjectStore(testRegistry());
+    const resource = store.addNode("entities.resource", { x: 0, y: 0 });
+    const system = store.addNode("systems.system", { x: 100, y: 0 });
+    const beforeEdges = store.getCurrentGraph().edges.length;
+
+    expect(
+      store.addEdge({
+        sourceNode: resource.id,
+        sourcePort: "stock",
+        targetNode: system.id,
+        targetPort: "resources",
+      }),
+    ).toBeNull();
+    expect(store.getCurrentGraph().edges).toHaveLength(beforeEdges + 1);
+
+    store.undo();
+    expect(store.getCurrentGraph().edges).toHaveLength(beforeEdges);
+    expect(store.getCurrentGraph().nodes.find((candidate) => candidate.id === resource.id)).toBeDefined();
+    expect(store.getCurrentGraph().nodes.find((candidate) => candidate.id === system.id)).toBeDefined();
+  });
+
+  it("illegal addEdge does not consume an undo slot", () => {
+    const store = createProjectStore(testRegistry());
+    const resource = store.addNode("entities.resource", { x: 0, y: 0 });
+    const agent = store.addNode("cognition.agent", { x: 100, y: 0 });
+
+    const err = store.addEdge({
+      sourceNode: resource.id,
+      sourcePort: "stock",
+      targetNode: agent.id,
+      targetPort: "personality",
+    });
+    expect(err).not.toBeNull();
+
+    store.undo();
+    expect(store.getCurrentGraph().nodes.find((candidate) => candidate.id === agent.id)).toBeUndefined();
+    expect(store.getCurrentGraph().nodes.find((candidate) => candidate.id === resource.id)).toBeDefined();
+  });
+
+  it("insertPreset then undo restores prior graph counts", () => {
+    const store = createProjectStore(testRegistry());
+    const nodeCount = store.getCurrentGraph().nodes.length;
+    const graphCount = store.getProject().graphs.length;
+
+    store.insertPreset(nationPreset("Atlantic Federation"), { x: 20, y: 30 });
+    expect(store.getCurrentGraph().nodes.length).toBeGreaterThan(nodeCount);
+    expect(store.getProject().graphs.length).toBeGreaterThan(graphCount);
+
+    store.undo();
+    expect(store.getCurrentGraph().nodes).toHaveLength(nodeCount);
+    expect(store.getProject().graphs).toHaveLength(graphCount);
+  });
 });
 
 function clockConfig(store: ReturnType<typeof createProjectStore>) {
