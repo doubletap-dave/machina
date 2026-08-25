@@ -16,7 +16,10 @@ export const personalityConfigSchema = baseConfigSchema.extend({
 });
 
 export const agentConfigSchema = baseConfigSchema.extend({
-  model: z.string().default("mock"),
+  llmProvider: z
+    .enum(["anthropic", "openai", "openrouter", "perplexity"])
+    .optional(),
+  llmModel: z.string().min(1).optional(),
 });
 
 export const systemConfigSchema = baseConfigSchema.extend({

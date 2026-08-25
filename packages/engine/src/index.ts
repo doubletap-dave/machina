@@ -2,7 +2,7 @@ export {
   openEngine,
   openEngineFromProject,
 } from "./engine.ts";
-export type { CompileOutcome, EngineRun, MachinaEngine } from "./engine.ts";
+export type { CompileOutcome, EngineRun, MachinaEngine, OpenEngineOpts } from "./engine.ts";
 export {
   apiKeyFromEnv,
   credentialsPath,
@@ -27,3 +27,13 @@ export type {
 } from "./credentials.ts";
 export { listAndVerify } from "./list-models.ts";
 export type { ListModelsResult } from "./list-models.ts";
+export {
+  agentConfigsFromProject,
+  createLlmThink,
+  langchainInvokeChat,
+} from "./llm-think.ts";
+export type {
+  AgentLlmOverride,
+  CreateLlmThinkOpts,
+  InvokeChat,
+} from "./llm-think.ts";

@@ -11,6 +11,15 @@ import { createRegistry } from "@machina/node-sdk";
 import { loadProject } from "@machina/persistence";
 import { registerCoreKinds } from "@machina/plugin-core";
 import { createKernelFromPlan, type ThinkFn } from "@machina/simulation";
+import {
+  loadCredentials,
+  type CredentialsFile,
+} from "./credentials.ts";
+import {
+  agentConfigsFromProject,
+  createLlmThink,
+  type InvokeChat,
+} from "./llm-think.ts";
 
 const NO_LLM =
   "No language model is configured. Possess the agent or set an API key.";
@@ -41,6 +50,13 @@ export type MachinaEngine = {
     stance?: "watch" | "god" | "possess";
     possessNodeId?: string;
   }): Promise<EngineRun>;
+};
+
+export type OpenEngineOpts = {
+  think?: ThinkFn;
+  credentials?: CredentialsFile;
+  invokeChat?: InvokeChat;
+  homedir?: string;
 };
 
 type Stance = { mode: "watch" | "god" | "possess"; nodeId?: string };
@@ -90,10 +106,19 @@ function createRun(
           emit({ type: "possess-wait", nodeId: actorKey, packet: input.packet });
         });
       }
-      if (think) return think(input);
-      emit({ type: "error", message: NO_LLM });
-      errors.push({ code: "NO_LLM", message: NO_LLM });
-      throw new Error(NO_LLM);
+      try {
+        if (!think) {
+          throw new Error(NO_LLM);
+        }
+        return await think(input);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        emit({ type: "error", message });
+        if (message === NO_LLM) {
+          errors.push({ code: "NO_LLM", message: NO_LLM });
+        }
+        throw error instanceof Error ? error : new Error(message);
+      }
     },
   });
 
@@ -157,7 +182,7 @@ function createRun(
 
 export function openEngineFromProject(
   project: MachinaProject,
-  opts?: { think?: ThinkFn },
+  opts?: OpenEngineOpts,
 ): MachinaEngine {
   return {
     compile() {
@@ -168,14 +193,21 @@ export function openEngineFromProject(
       if (!compiled.ok) {
         throw new Error(compiled.errors.map((error) => error.message).join(" "));
       }
-      return createRun(compiled.plan, startOpts, opts?.think);
+      const think = opts?.think ?? createLlmThink({
+        invokeChat: opts?.invokeChat,
+        credentials:
+          opts?.credentials ??
+          (await loadCredentials({ homedir: opts?.homedir })).file,
+        agentConfig: agentConfigsFromProject(project),
+      });
+      return createRun(compiled.plan, startOpts, think);
     },
   };
 }
 
 export async function openEngine(
   dir: string,
-  opts?: { think?: ThinkFn },
+  opts?: OpenEngineOpts,
 ): Promise<MachinaEngine> {
   const project = await loadProject(dir);
   return openEngineFromProject(project, opts);

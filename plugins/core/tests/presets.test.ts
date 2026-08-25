@@ -131,6 +131,10 @@ describe("nationPreset", () => {
       .filter((n) => n.kind === "cognition.agent")
       .map((n) => n.kind);
     expect(agentKinds).toEqual(["cognition.agent", "cognition.agent"]);
+
+    for (const agent of nodesByKind(preset, "cognition.agent")) {
+      expect(agent.config).not.toHaveProperty("model");
+    }
   });
 
   it("compiles with clock, world, two nations, relationship, and diplomacy", () => {

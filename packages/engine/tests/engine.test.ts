@@ -1,8 +1,10 @@
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { InstrumentMsg } from "@machina/core";
 import { loadProject } from "@machina/persistence";
+import { emptyCredentials } from "../src/credentials.ts";
 import { openEngine, openEngineFromProject } from "../src/engine.ts";
+import * as listModels from "../src/list-models.ts";
 
 const dir = resolve(import.meta.dirname, "../../../examples/dead-channel-lite");
 
@@ -61,7 +63,7 @@ describe("openEngine", () => {
   });
 
   it("emits English error when no think is configured", async () => {
-    const engine = await openEngine(dir);
+    const engine = await openEngine(dir, { credentials: emptyCredentials() });
     const run = await engine.start({ seed: 1 });
     const messages: string[] = [];
     run.subscribe((m) => {
@@ -89,7 +91,7 @@ describe("openEngine", () => {
   });
 
   it("pauses after missing think so the next step does not advance", async () => {
-    const engine = await openEngine(dir);
+    const engine = await openEngine(dir, { credentials: emptyCredentials() });
     const run = await engine.start({ seed: 1 });
     await expect(run.step()).rejects.toThrow(
       "No language model is configured. Possess the agent or set an API key.",
@@ -113,7 +115,7 @@ describe("openEngine", () => {
   });
 
   it("refuses the next step if think fails after a God edit", async () => {
-    const engine = await openEngine(dir);
+    const engine = await openEngine(dir, { credentials: emptyCredentials() });
     const run = await engine.start({ seed: 1 });
     run.pause();
     run.applyIntervention({
@@ -136,5 +138,44 @@ describe("openEngineFromProject", () => {
     const engine = openEngineFromProject(project, { think: waitThink });
     const compiled = engine.compile();
     expect(compiled.ok).toBe(true);
+  });
+});
+
+describe("injected think", () => {
+  it("is used and never calls list-models", async () => {
+    const listSpy = vi.spyOn(listModels, "listAndVerify");
+    const think = vi.fn(waitThink);
+    const engine = await openEngine(dir, { think });
+    const run = await engine.start({ seed: 7 });
+    const { turn } = await run.step();
+    expect(turn).toBe(1);
+    expect(think).toHaveBeenCalled();
+    expect(listSpy).not.toHaveBeenCalled();
+    listSpy.mockRestore();
+  });
+
+  it("uses createLlmThink when think is omitted", async () => {
+    const invokeChat = vi.fn(async () =>
+      JSON.stringify({ type: "wait", params: {} }),
+    );
+    const engine = await openEngine(dir, {
+      invokeChat,
+      credentials: {
+        schemaVersion: 1,
+        default: { provider: "openai", model: "gpt-4o" },
+        providers: {
+          openai: {
+            apiKey: "sk-test",
+            last4: "test",
+            verifiedAt: "2026-08-24T00:00:00.000Z",
+            models: [],
+          },
+        },
+      },
+    });
+    const run = await engine.start({ seed: 7 });
+    const { turn } = await run.step();
+    expect(turn).toBe(1);
+    expect(invokeChat).toHaveBeenCalled();
   });
 });

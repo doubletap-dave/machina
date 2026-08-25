@@ -49,7 +49,7 @@ function cabinetSubgraph(
     node(memoryId, "cognition.memory", {}, pos(0, 160)),
     node(perceptionId, "perception.perception", {}, pos(0, 240)),
     ...agents.map((a) =>
-      node(a.id, "cognition.agent", { name: a.name, model: "mock" }, a.position),
+      node(a.id, "cognition.agent", { name: a.name }, a.position),
     ),
   ];
 

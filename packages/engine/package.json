@@ -9,6 +9,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@langchain/anthropic": "^1.5.8",
+    "@langchain/core": "^1.2.9",
+    "@langchain/openai": "^1.5.10",
     "@machina/core": "workspace:*",
     "@machina/graph": "workspace:*",
     "@machina/node-sdk": "workspace:*",
