@@ -7,9 +7,11 @@ import { createStudioRegistry } from "@/lib/create-studio-registry";
 import { ProjectStoreProvider, useProjectSnapshot } from "@/lib/project-store-context";
 import { RunPanel } from "./RunPanel";
 
-const { compile, startRun, subscribe } = vi.hoisted(() => ({
+const { compile, startRun, pause, setStance, subscribe } = vi.hoisted(() => ({
   compile: vi.fn(),
   startRun: vi.fn(),
+  pause: vi.fn(),
+  setStance: vi.fn(),
   subscribe: vi.fn<(onMessage: (msg: InstrumentMsg) => void) => () => void>(),
 }));
 
@@ -18,9 +20,9 @@ vi.mock("@/lib/machina-client", () => ({
     compile,
     startRun,
     step: vi.fn(),
-    pause: vi.fn(),
+    pause,
     rewind: vi.fn(),
-    setStance: vi.fn(),
+    setStance,
     submitAction: vi.fn(),
     getRun: vi.fn(),
     loadExampleWorld: vi.fn(),
@@ -40,7 +42,19 @@ const packet: ObservationPacket = {
   legalActions: ["wait", "signal"],
 };
 
-function SeededRunPanel({ onError }: { onError: (message: string) => void }) {
+type RunPanelHarnessProps = {
+  onError: (message: string) => void;
+  onPausedChange?: (paused: boolean) => void;
+  possessRequest?: string | null;
+  onPossessConsumed?: () => void;
+};
+
+function SeededRunPanel({
+  onError,
+  onPausedChange,
+  possessRequest,
+  onPossessConsumed,
+}: RunPanelHarnessProps) {
   const store = useProjectSnapshot();
   const [ready, setReady] = useState(false);
 
@@ -53,13 +67,23 @@ function SeededRunPanel({ onError }: { onError: (message: string) => void }) {
     return null;
   }
 
-  return <RunPanel onError={onError} />;
+  return (
+    <RunPanel
+      onError={onError}
+      onPausedChange={onPausedChange}
+      possessRequest={possessRequest}
+      onPossessConsumed={onPossessConsumed}
+    />
+  );
 }
 
-function renderRunPanel(onError: (message: string) => void = () => {}) {
+function renderRunPanel(
+  onError: (message: string) => void = () => {},
+  extras: Omit<RunPanelHarnessProps, "onError"> = {},
+) {
   return render(
     <ProjectStoreProvider registry={createStudioRegistry()}>
-      <SeededRunPanel onError={onError} />
+      <SeededRunPanel onError={onError} {...extras} />
     </ProjectStoreProvider>,
   );
 }
@@ -74,8 +98,12 @@ describe("RunPanel", () => {
     subscribe.mockImplementation(() => () => {});
     compile.mockReset();
     startRun.mockReset();
+    pause.mockReset();
+    setStance.mockReset();
     compile.mockResolvedValue({ ok: true, plan: {} });
     startRun.mockResolvedValue({ id: "run-1" });
+    pause.mockResolvedValue(undefined);
+    setStance.mockResolvedValue(undefined);
   });
 
   it("hides possess-panel until a possess-wait packet arrives and never shows chainOfThought", async () => {
@@ -118,5 +146,52 @@ describe("RunPanel", () => {
     );
     const body = startRun.mock.calls[0]?.[0] as { possessNodeId?: string };
     expect(body.possessNodeId?.length).toBeGreaterThan(0);
+  });
+
+  it("reports pause to onPausedChange", async () => {
+    const user = userEvent.setup();
+    const onPausedChange = vi.fn();
+    renderRunPanel(() => {}, { onPausedChange });
+
+    await user.click(await screen.findByRole("button", { name: "Start run" }));
+    await user.click(await screen.findByRole("button", { name: "Pause" }));
+
+    expect(onPausedChange).toHaveBeenCalledWith(true);
+  });
+
+  it("applies canvas possessRequest by setting possess stance", async () => {
+    const user = userEvent.setup();
+
+    function PossessRequestHarness() {
+      const [request, setRequest] = useState<string | null>(null);
+      return (
+        <>
+          <button type="button" onClick={() => setRequest("actor-1")}>
+            Request possess
+          </button>
+          <SeededRunPanel
+            onError={() => {}}
+            possessRequest={request}
+            onPossessConsumed={() => setRequest(null)}
+          />
+        </>
+      );
+    }
+
+    render(
+      <ProjectStoreProvider registry={createStudioRegistry()}>
+        <PossessRequestHarness />
+      </ProjectStoreProvider>,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Start run" }));
+    await user.click(screen.getByRole("button", { name: "Request possess" }));
+
+    expect(setStance).toHaveBeenCalledWith("run-1", "possess", "actor-1");
+    const stance = screen.getByRole("group", { name: "Run stance" });
+    expect(within(stance).getByRole("button", { name: "possess" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });

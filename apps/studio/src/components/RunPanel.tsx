@@ -11,9 +11,17 @@ import { legalPossessTargets, type Stance } from "@/run/stance";
 
 type RunPanelProps = {
   onError: (message: string) => void;
+  onPausedChange?: (paused: boolean) => void;
+  possessRequest?: string | null;
+  onPossessConsumed?: () => void;
 };
 
-export function RunPanel({ onError }: RunPanelProps) {
+export function RunPanel({
+  onError,
+  onPausedChange,
+  possessRequest,
+  onPossessConsumed,
+}: RunPanelProps) {
   const store = useProjectSnapshot();
   const [runId, setRunId] = useState<string | null>(null);
   const [turn, setTurn] = useState(0);
@@ -27,6 +35,14 @@ export function RunPanel({ onError }: RunPanelProps) {
     [store],
   );
   const possessNodeId = stance.nodeId ?? possessTargets[0];
+
+  const reportPaused = useCallback(
+    (next: boolean) => {
+      setPaused(next);
+      onPausedChange?.(next);
+    },
+    [onPausedChange],
+  );
 
   useEffect(() => {
     const client = getStudioClient();
@@ -58,14 +74,14 @@ export function RunPanel({ onError }: RunPanelProps) {
       });
       setRunId(result.id);
       setTurn(0);
-      setPaused(false);
+      reportPaused(false);
       setPacket(null);
     } catch (error) {
       onError(error instanceof Error ? error.message : "Could not reach runtime.");
     } finally {
       setBusy(false);
     }
-  }, [onError, possessNodeId, stance.mode, store]);
+  }, [onError, possessNodeId, reportPaused, stance.mode, store]);
 
   const step = useCallback(async () => {
     if (!runId) {
@@ -76,13 +92,13 @@ export function RunPanel({ onError }: RunPanelProps) {
     try {
       const result = await client.step(runId);
       setTurn(result.turn);
-      setPaused(false);
+      reportPaused(false);
     } catch (error) {
       onError(error instanceof Error ? error.message : "Step failed.");
     } finally {
       setBusy(false);
     }
-  }, [onError, runId]);
+  }, [onError, reportPaused, runId]);
 
   const pause = useCallback(async () => {
     if (!runId) {
@@ -90,11 +106,11 @@ export function RunPanel({ onError }: RunPanelProps) {
     }
     try {
       await getStudioClient().pause(runId);
-      setPaused(true);
+      reportPaused(true);
     } catch (error) {
       onError(error instanceof Error ? error.message : "Pause failed.");
     }
-  }, [onError, runId]);
+  }, [onError, reportPaused, runId]);
 
   const rewind = useCallback(
     async (nextTurn: number) => {
@@ -134,6 +150,14 @@ export function RunPanel({ onError }: RunPanelProps) {
     },
     [onError, possessTargets, runId],
   );
+
+  useEffect(() => {
+    if (!possessRequest) {
+      return;
+    }
+    void changeStance({ mode: "possess", nodeId: possessRequest });
+    onPossessConsumed?.();
+  }, [changeStance, onPossessConsumed, possessRequest]);
 
   const submitPossessAction = useCallback(
     async (action: string) => {

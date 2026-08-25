@@ -27,6 +27,8 @@ export function StudioShell() {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [skipAnimations, setSkipAnimations] = useState(false);
+  const [runPaused, setRunPaused] = useState(false);
+  const [possessRequest, setPossessRequest] = useState<string | null>(null);
   const turn = 0;
   const events = 0;
   const cost = 0;
@@ -145,8 +147,8 @@ export function StudioShell() {
               <CanvasProvider
                 onEdgeError={showError}
                 skipAnimations={skipAnimations}
-                runPaused={false}
-                onPossessNode={() => {}}
+                runPaused={runPaused}
+                onPossessNode={setPossessRequest}
               />
             </main>
             <Inspector />
@@ -156,8 +158,8 @@ export function StudioShell() {
             <CanvasProvider
               onEdgeError={showError}
               skipAnimations={skipAnimations}
-              runPaused={false}
-              onPossessNode={() => {}}
+              runPaused={runPaused}
+              onPossessNode={setPossessRequest}
             />
           </main>
         ) : null}
@@ -171,7 +173,12 @@ export function StudioShell() {
                 : "w-72 border-l border-neutral-800 bg-neutral-950"
           }
         >
-          <RunPanel onError={showError} />
+          <RunPanel
+            onError={showError}
+            onPausedChange={setRunPaused}
+            possessRequest={possessRequest}
+            onPossessConsumed={() => setPossessRequest(null)}
+          />
         </aside>
       </div>
 
