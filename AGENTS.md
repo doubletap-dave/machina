@@ -45,8 +45,9 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | Models and credentials | ✅ Done | `master` @ `2c23ff7` | 33/33 engine · 26/26 runtime · 10/10 client · 5/5 plugin-core · 99/99 studio |
 | Kind author | ✅ Done | `master` @ `176c7dd` | 37/37 engine · 27/27 runtime · 7/7 node-sdk · 112/112 studio |
 | Studio themes-fonts | ✅ Done | `master` @ `2d0b80b` | 12/12 (`@machina/ui`) · 119/119 (`@machina/studio`) |
+| Studio and engine complete | ✅ Done | `master` @ `f701702` | **336/336 (`pnpm test`)** |
 
-Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md` · `lane-studio-models.md` · `lane-studio-kind-author.md` · `lane-studio-themes-fonts.md`
+Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md` · `lane-studio-models.md` · `lane-studio-kind-author.md` · `lane-studio-themes-fonts.md` · `lane-studio-and-engine-complete.md`
 
 ---
 
@@ -73,7 +74,7 @@ Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md`
 
 ### Stack (pin @latest at implementation time)
 
-Node 22 · pnpm 9 · TypeScript 5.7+ · Vitest 3 · Zod 3 · Next.js 15 · React 19 · `@xyflow/react` 12 · Tailwind 4 · Drizzle · `@electric-sql/pglite` · `@langchain/langgraph` · `@langchain/core`
+Node 22 · pnpm 9 · TypeScript 5.7+ · Vitest 3 · Zod 3 · Next.js 16 · React 19 · `@xyflow/react` 12 · Tailwind 4 · Drizzle · `@electric-sql/pglite` · `@langchain/langgraph` · `@langchain/core`
 
 ---
 
@@ -88,7 +89,7 @@ vitest.workspace.ts       # TODO: migrate to vitest.config.ts test.projects (Vit
 
 packages/core/src/
   ports.ts errors.ts match-ports.ts ir.ts plan.ts events.ts packets.ts instrument.ts llm-english.ts
-  kind-manifest.ts kind-hash.ts kind-english.ts index.ts
+  kind-manifest.ts kind-hash.ts kind-english.ts god-view.ts index.ts
 packages/node-sdk/src/
   define-node.ts from-manifest.ts index.ts
 packages/ui/src/
@@ -107,14 +108,15 @@ packages/engine/          # openEngine, openEngineFromProject — in-process wor
                           # llm-think.ts — createLlmThink (default Think when opts.think omitted)
                           # OpenEngineOpts.kinds — compile OK / start refuse when runtime omitted
 packages/client/          # MachinaClient — HTTP + WS; settings: getSettings, putProviderKey, deleteProvider, refreshProvider, putDefault
-                          # compile(project, kinds?), startRun({ kinds? })
+                          # compile(project, kinds?), startRun({ kinds? }); getTruth, applyIntervention
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
-                          # canvas-ops — src/canvas/; lib/undo-stack.ts, lib/graph-edit.ts
+                          # canvas — flow-sync.ts, dnd.ts, port-symbol; GodInspector; studio-chrome
+                          # canvas-ops — lib/undo-stack.ts, lib/graph-edit.ts
                           # port-language — src/canvas/port-symbol.tsx; connect-highlight.ts
                           # Configuration — components/ConfigurationPage.tsx (Configure mode)
                           # kinds/ — KindAuthorForm, kind-library (~/.machina/kinds), validate-kind
                           # app/api/kind-library — Studio publish / add-from-library
-                          # themes-fonts — lib/studio-prefs.ts; components/AppearanceMenu.tsx, ThemeRoot.tsx
+                          # themes-fonts — lib/studio-prefs.ts; AppearanceMenu; ThemeRoot; --machina-grid-dot
 apps/runtime/             # HTTP/CLI drive @machina/engine (app.ts, serve.ts, run-project.ts, cli.ts)
 apps/runtime/src/settings.ts # GET/PUT/DELETE /settings/* (no apiKey on GET); env overlay + in-memory verify
 apps/runtime/src/compose.ts  # POST /compose — same verified view as GET /settings/models
@@ -129,7 +131,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 ## Frozen exports (Wave 0 — do not rename)
 
-**`@machina/core`:** `PortType`, `PortDef`, `Cardinality`, `MachinaError`, `machinaError`, `matchPorts`, `MachinaProject`, `GraphDocument`, `MachinaNode`, `MachinaEdge`, `Wire`, `SimulationPlan`, `ObservationPacket`, `MachinaEvent`, `AgentAction`, `stripPositions`, `InstrumentMsg`, `keyRefusedCopy`, `providerUnreachableCopy`, `illegalModelActionCopy`, `agentLlmIncompleteCopy`, `credentialsUnreadableCopy`, `noDefaultModelCopy`, `describeNoLlmCopy`, `KindManifest`, `KindField`, `canonicalKindJson`, `kindHash`, `kindNoRuntimeCopy`, `kindPinMismatchCopy`, `kindUnpinnedFileCopy`, `kindPinMissingFileCopy`, `kindIdReservedCopy`
+**`@machina/core`:** `PortType`, `PortDef`, `Cardinality`, `MachinaError`, `machinaError`, `matchPorts`, `MachinaProject`, `GraphDocument`, `MachinaNode`, `MachinaEdge`, `Wire`, `SimulationPlan`, `AgentPacket`, `emptyAgentPacket`, `GodView`, `ObservationPacket`, `MachinaEvent`, `AgentAction`, `stripPositions`, `InstrumentMsg`, `keyRefusedCopy`, `providerUnreachableCopy`, `illegalModelActionCopy`, `agentLlmIncompleteCopy`, `credentialsUnreadableCopy`, `noDefaultModelCopy`, `describeNoLlmCopy`, `KindManifest`, `KindField`, `canonicalKindJson`, `kindHash`, `kindNoRuntimeCopy`, `kindPinMismatchCopy`, `kindUnpinnedFileCopy`, `kindPinMissingFileCopy`, `kindIdReservedCopy`, `actorNeedsNameCopy`, `goalHasNoStatementCopy`
 
 **`@machina/node-sdk`:** `defineNode`, `NodeDefinition`, `NodeRegistry`, `createRegistry`, `kindManifestToDefinition`
 
@@ -137,7 +139,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/plugin-core`:** `registerCoreKinds`, 14 kinds v1, `nationPreset`, `cabinetPreset`, `agencyPreset`, `listBuiltinPresets`, `Preset`
 
-**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`, `fontMono`, `animationDelayMs`, `PORT_LANGUAGE`, `portLanguage`, `kindNoRuntimeCopy`, `kindIdReservedCopy` (re-exports), `MachinaThemeId`, `THEME_LABELS`
+**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`, `fontMono`, `animationDelayMs`, `PORT_LANGUAGE`, `portLanguage`, `PortSymbolId`, `kindNoRuntimeCopy`, `kindIdReservedCopy`, `actorNeedsNameCopy`, `goalHasNoStatementCopy` (re-exports), `MachinaThemeId`, `THEME_LABELS`
 
 **`@machina/simulation`:** `createRng`, `createKernel`, `createKernelFromPlan`, `actorIdsFromPlan`, `Kernel`, `ThinkFn`, `InstrumentMsg` — **`TrueWorldState` is internal only**
 
@@ -145,9 +147,9 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/persistence`:** `saveProject`, `loadProject`, `loadKindManifests`, `verifyProjectKinds`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
 
-**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`, `credentialsPath`, `loadCredentials`, `saveCredentials`, `publicProviderView`, `last4`, `restrictToOwner`, `ProviderId`, `CredentialsFile`, `listAndVerify`, `ListModelsResult`, `apiKeyFromEnv`, `isProviderId`, `PROVIDER_IDS`, `PROVIDER_ENV`, `createLlmThink`, `langchainInvokeChat`
+**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun` (`getGodView`), `CompileOutcome`, `credentialsPath`, `loadCredentials`, `saveCredentials`, `publicProviderView`, `last4`, `restrictToOwner`, `ProviderId`, `CredentialsFile`, `listAndVerify`, `ListModelsResult`, `apiKeyFromEnv`, `isProviderId`, `PROVIDER_IDS`, `PROVIDER_ENV`, `createLlmThink`, `langchainInvokeChat`
 
-**`@machina/client`:** `MachinaClient`, `CompileOutcome`, `SettingsModels`, `PublicProviderSlice` (local; do not import `@machina/engine`)
+**`@machina/client`:** `MachinaClient` (`getTruth`, `applyIntervention`), `CompileOutcome`, `SettingsModels`, `PublicProviderSlice` (local; do not import `@machina/engine`)
 
 **`@machina/runtime`:** `createApp`, `runCli`, `runProjectHeadless`, WebSocket on `/ws`, CLI `machina run <dir> --turns N` · `machina test`
 
@@ -161,11 +163,11 @@ pnpm install
 pnpm dev                               # browser: Studio @ :3000 + runtime @ :4000
 pnpm dev:studio                        # Studio only
 pnpm dev:runtime                       # Runtime API only
-pnpm test                              # 277/277 workspace automated tests
-pnpm --filter @machina/engine test     # 37/37 in-process engine (credentials, list-models, createLlmThink, kind start-refuse)
-pnpm --filter @machina/runtime test    # 27/27 including settings HTTP + compose + kind compile/start
-pnpm --filter @machina/client test     # 10/10 HTTP + WS + settings + compose
-pnpm --filter @machina/studio test     # 119/119 including kind author + themes/fonts
+pnpm test                              # 336/336 workspace automated tests
+pnpm --filter @machina/engine test     # 37/37 in-process engine (credentials, list-models, createLlmThink, kind start-refuse, getGodView)
+pnpm --filter @machina/runtime test    # 29/29 including settings HTTP + compose + kind compile/start + GET /runs/:id/truth
+pnpm --filter @machina/client test     # 12/12 HTTP + WS + settings + compose + getTruth + applyIntervention
+pnpm --filter @machina/studio test     # 153/153 including Inspector fields, GodInspector, canvas flow-sync/dnd, starter compile
 
 # Add a dependency to a package (example)
 cd packages/graph
@@ -235,3 +237,6 @@ pnpm install
 
 - Vitest: `vitest.workspace.ts` is deprecated — migrate to `test.projects` in root `vitest.config.ts` before Vitest 4.
 - Missing or unverified model: English + pause via `createLlmThink` / compose; no invented action.
+- `RunPanel.tsx` is over the ~200 LOC target.
+- Configure still unmounts the run workspace (`StudioWorkspace` returns only the configure page).
+- Command palette and canvas context menu still use Tailwind `neutral-*` instead of theme tokens.
