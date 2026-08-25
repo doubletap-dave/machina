@@ -177,4 +177,36 @@ describe("createKernelFromPlan", () => {
     expect(logs.some((m) => m.type === "log" && m.record === "event")).toBe(true);
     expect(logs.some((m) => m.type === "log" && m.record === "action")).toBe(false);
   });
+
+  it("defaults omitted logger record to both", async () => {
+    const logged: SimulationPlan = {
+      ...plan,
+      agents: [
+        {
+          nodeId: "agent-a",
+          actorRef: "a",
+          graphRef: "g1",
+          packetWires: [],
+          packet: emptyAgentPacket(),
+        },
+      ],
+      analysis: [
+        {
+          nodeId: "log",
+          kind: "analysis.logger",
+          config: {},
+          wires: [],
+        },
+      ],
+    };
+    const logs: InstrumentMsg[] = [];
+    const kernel = createKernelFromPlan(logged, {
+      seed: 1,
+      onInstrument: (msg) => logs.push(msg),
+      think: async ({ packet }) => ({ actorId: packet.actorId, type: "wait", params: {} }),
+    });
+    await kernel.runTurn();
+    expect(logs.some((m) => m.type === "log" && m.record === "action")).toBe(true);
+    expect(logs.some((m) => m.type === "log" && m.record === "event")).toBe(true);
+  });
 });

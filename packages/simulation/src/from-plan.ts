@@ -40,10 +40,11 @@ function loggerFlags(plan: SimulationPlan): { logActions: boolean; logEvents: bo
       continue;
     }
     const record = stringField(node.config, "record");
-    if (record === "actions" || record === "both") {
+    const mode = record === "actions" || record === "events" || record === "both" ? record : "both";
+    if (mode === "actions" || mode === "both") {
       logActions = true;
     }
-    if (record === "events" || record === "both") {
+    if (mode === "events" || mode === "both") {
       logEvents = true;
     }
   }
