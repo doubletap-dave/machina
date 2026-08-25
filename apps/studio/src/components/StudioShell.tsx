@@ -8,7 +8,7 @@ import { loadStudioPrefs } from "@/lib/studio-prefs";
 import { resolveMonoFont, resolveUiFont } from "@/lib/studio-fonts";
 import { getStudioClient } from "@/lib/machina-client";
 import { starterProject } from "@/templates/starter";
-import type { Stance } from "@/run/stance";
+import { legalPossessTargets, type Stance } from "@/run/stance";
 import { StanceBar } from "@/run/StanceBar";
 import { CanvasProvider } from "./Canvas";
 import { CommandPalette, useCommandPaletteShortcut } from "./CommandPalette";
@@ -38,6 +38,7 @@ export function StudioShell() {
   const [runPaused, setRunPaused] = useState(false);
   const [possessRequest, setPossessRequest] = useState<string | null>(null);
   const [stance, setStance] = useState<Stance>({ mode: "watch" });
+  const [runId, setRunId] = useState<string | null>(null);
   const [turn, setTurn] = useState(0);
   const events = 0;
   const cost = 0;
@@ -71,6 +72,24 @@ export function StudioShell() {
     setToast(message);
     window.setTimeout(() => setToast(null), 3000);
   }, []);
+
+  const changeStance = useCallback(
+    (next: Stance) => {
+      if (next.mode === "possess") {
+        if (runId !== null && !runPaused) {
+          showError("Pause a run to possess this actor.");
+          return;
+        }
+        setStance({
+          mode: "possess",
+          nodeId: legalPossessTargets(project, store.getSelectedNodeId())[0],
+        });
+        return;
+      }
+      setStance(next);
+    },
+    [project, runId, runPaused, showError, store],
+  );
 
   const loadTemplate = useCallback(
     async (template: "starter" | "example") => {
@@ -165,7 +184,7 @@ export function StudioShell() {
             ) : null}
           </>
         }
-        stances={<StanceBar stance={stance} onChange={setStance} />}
+        stances={<StanceBar stance={stance} onChange={changeStance} />}
       />
 
       <StudioWorkspace
@@ -196,6 +215,7 @@ export function StudioShell() {
             stance={stance}
             onStanceChange={setStance}
             onTurn={setTurn}
+            onRunId={setRunId}
           />
         }
         configure={

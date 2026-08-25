@@ -8,13 +8,17 @@ import { ProjectStoreProvider, useProjectSnapshot } from "@/lib/project-store-co
 import type { Stance } from "@/run/stance";
 import { RunPanel } from "./RunPanel";
 
-const { compile, startRun, pause, setStance, subscribe } = vi.hoisted(() => ({
-  compile: vi.fn(),
-  startRun: vi.fn(),
-  pause: vi.fn(),
-  setStance: vi.fn(),
-  subscribe: vi.fn<(onMessage: (msg: InstrumentMsg) => void) => () => void>(),
-}));
+const { compile, startRun, pause, setStance, subscribe, getTruth, applyIntervention } = vi.hoisted(
+  () => ({
+    compile: vi.fn(),
+    startRun: vi.fn(),
+    pause: vi.fn(),
+    setStance: vi.fn(),
+    subscribe: vi.fn<(onMessage: (msg: InstrumentMsg) => void) => () => void>(),
+    getTruth: vi.fn(),
+    applyIntervention: vi.fn(),
+  }),
+);
 
 vi.mock("@/lib/machina-client", () => ({
   getStudioClient: () => ({
@@ -26,6 +30,8 @@ vi.mock("@/lib/machina-client", () => ({
     setStance,
     submitAction: vi.fn(),
     getRun: vi.fn(),
+    getTruth,
+    applyIntervention,
     loadExampleWorld: vi.fn(),
     subscribe,
   }),
@@ -111,10 +117,14 @@ describe("RunPanel", () => {
     startRun.mockReset();
     pause.mockReset();
     setStance.mockReset();
+    getTruth.mockReset();
+    applyIntervention.mockReset();
     compile.mockResolvedValue({ ok: true, plan: {} });
     startRun.mockResolvedValue({ id: "run-1" });
     pause.mockResolvedValue(undefined);
     setStance.mockResolvedValue(undefined);
+    getTruth.mockResolvedValue({ turn: 0, actors: {} });
+    applyIntervention.mockResolvedValue(undefined);
   });
 
   it("hides possess-panel until a possess-wait packet arrives and never shows chainOfThought", async () => {

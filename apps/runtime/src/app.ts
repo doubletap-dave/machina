@@ -242,6 +242,16 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
             });
             return;
           }
+          const body = await readJson<{
+            path: string;
+            value: unknown;
+            noticeable: boolean;
+          }>(req);
+          run.engineRun.applyIntervention({
+            path: body.path,
+            value: body.value,
+            noticeable: Boolean(body.noticeable),
+          });
           sendJson(res, 200, { ok: true });
           return;
         }

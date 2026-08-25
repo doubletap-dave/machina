@@ -140,6 +140,40 @@ describe("MachinaClient", () => {
     });
   });
 
+  it("applyIntervention posts path value and noticeable", async () => {
+    const posted: Array<{ url: string; init?: RequestInit }> = [];
+    const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      posted.push({ url: String(input), init });
+      return jsonResponse(200, { ok: true });
+    }) as typeof fetch;
+    const previous = globalThis.fetch;
+    globalThis.fetch = fetchImpl;
+    try {
+      const client = new MachinaClient({ baseUrl: "http://127.0.0.1:9" });
+      await client.applyIntervention("run-1", {
+        path: "actors.a.resources.economy",
+        value: 10,
+        noticeable: true,
+      });
+    } finally {
+      globalThis.fetch = previous;
+    }
+    expect(posted).toEqual([
+      {
+        url: "http://127.0.0.1:9/runs/run-1/interventions",
+        init: {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            path: "actors.a.resources.economy",
+            value: 10,
+            noticeable: true,
+          }),
+        },
+      },
+    ]);
+  });
+
   it("getTruth is 403 until stance is god", async () => {
     await withServer(async (client) => {
       const { id } = await client.startRun({ project, seed: 1 });

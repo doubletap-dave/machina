@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getStudioClient } from "@/lib/machina-client";
 import { useProjectSnapshot } from "@/lib/project-store-context";
 import { AnalyzeTab } from "@/run/AnalyzeTab";
+import { GodInspector } from "@/run/GodInspector";
 import { PossessPanel } from "@/run/PossessPanel";
 import { legalPossessTargets, type Stance } from "@/run/stance";
 import { chromeFill, chromeGhost } from "./studio-chrome";
@@ -17,6 +18,7 @@ type RunPanelProps = {
   stance: Stance;
   onStanceChange: (stance: Stance) => void;
   onTurn?: (turn: number) => void;
+  onRunId?: (runId: string | null) => void;
 };
 
 export function RunPanel({
@@ -27,6 +29,7 @@ export function RunPanel({
   stance,
   onStanceChange,
   onTurn,
+  onRunId,
 }: RunPanelProps) {
   const store = useProjectSnapshot();
   const [runId, setRunId] = useState<string | null>(null);
@@ -56,6 +59,10 @@ export function RunPanel({
     },
     [onTurn],
   );
+
+  useEffect(() => {
+    onRunId?.(runId);
+  }, [onRunId, runId]);
 
   useEffect(() => {
     const client = getStudioClient();
@@ -226,6 +233,10 @@ export function RunPanel({
         </button>
         <span style={{ color: "var(--machina-text-muted)" }}>Turn {turn}</span>
       </div>
+
+      {stance.mode === "god" && paused && runId ? (
+        <GodInspector runId={runId} onError={onError} />
+      ) : null}
 
       {stance.mode === "possess" && packet ? (
         <PossessPanel

@@ -11,21 +11,29 @@ vi.mock("./Canvas", () => ({
   findNodeById: () => undefined,
 }));
 
-const { compile, startRun } = vi.hoisted(() => ({
-  compile: vi.fn(),
-  startRun: vi.fn(),
-}));
+const { compile, startRun, pause, setStance, getTruth, applyIntervention } = vi.hoisted(
+  () => ({
+    compile: vi.fn(),
+    startRun: vi.fn(),
+    pause: vi.fn(),
+    setStance: vi.fn(),
+    getTruth: vi.fn(),
+    applyIntervention: vi.fn(),
+  }),
+);
 
 vi.mock("@/lib/machina-client", () => ({
   getStudioClient: () => ({
     compile,
     startRun,
     step: vi.fn(),
-    pause: vi.fn(),
+    pause,
     rewind: vi.fn(),
-    setStance: vi.fn(),
+    setStance,
     submitAction: vi.fn(),
     getRun: vi.fn(),
+    getTruth,
+    applyIntervention,
     loadExampleWorld: vi.fn(),
     getSettings: vi.fn().mockResolvedValue({
       default: null,
@@ -101,8 +109,16 @@ describe("StudioShell chrome", () => {
   beforeEach(() => {
     compile.mockReset();
     startRun.mockReset();
+    pause.mockReset();
+    setStance.mockReset();
+    getTruth.mockReset();
+    applyIntervention.mockReset();
     compile.mockResolvedValue({ ok: true, plan: {} });
     startRun.mockResolvedValue({ id: "run-1" });
+    pause.mockResolvedValue(undefined);
+    setStance.mockResolvedValue(undefined);
+    getTruth.mockResolvedValue({ turn: 0, actors: {} });
+    applyIntervention.mockResolvedValue(undefined);
   });
 
   it("uses sentence-case Build Run Analyze Configure", () => {
@@ -176,5 +192,33 @@ describe("StudioShell chrome", () => {
     await user.click(screen.getByRole("button", { name: /^Run$/ }));
     expect(screen.getByRole("button", { name: "Restart run" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Start run" })).not.toBeInTheDocument();
+  });
+
+  it("refuses header Possess while a run is running unpaused", async () => {
+    const user = userEvent.setup();
+    renderShell();
+    const header = screen.getByRole("banner");
+
+    await user.click(screen.getByRole("button", { name: /^Run$/ }));
+    await user.click(await screen.findByRole("button", { name: "Start run" }));
+    expect(await screen.findByRole("button", { name: "Restart run" })).toBeInTheDocument();
+
+    await user.click(within(header).getByRole("button", { name: "Possess" }));
+    expect(screen.getByText("Pause a run to possess this actor.")).toBeInTheDocument();
+    expect(within(header).getByRole("button", { name: "Watch" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(within(header).getByRole("button", { name: "Possess" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Pause" }));
+    await user.click(within(header).getByRole("button", { name: "Possess" }));
+    expect(within(header).getByRole("button", { name: "Possess" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 });

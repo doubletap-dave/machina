@@ -167,6 +167,47 @@ describe("HTTP control plane", () => {
     });
   });
 
+  it("applies a paused intervention so the next step changes economy", async () => {
+    const world = await loadProject(exampleDir);
+    await withServer(engineDeps(), async (base) => {
+      const create = await fetch(`${base}/runs`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ project: world, seed: 1 }),
+      });
+      expect(create.status).toBe(200);
+      const { id } = (await create.json()) as { id: string };
+
+      await fetch(`${base}/runs/${id}/pause`, { method: "POST" });
+      await fetch(`${base}/runs/${id}/stance`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ mode: "god" }),
+      });
+
+      const edited = await fetch(`${base}/runs/${id}/interventions`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          path: "actors.atlantic-federation.resources.economy",
+          value: 10,
+          noticeable: false,
+        }),
+      });
+      expect(edited.status).toBe(200);
+
+      const step = await fetch(`${base}/runs/${id}/step`, { method: "POST" });
+      expect(step.status).toBe(200);
+
+      const truth = await fetch(`${base}/runs/${id}/truth`);
+      expect(truth.status).toBe(200);
+      const view = (await truth.json()) as {
+        actors: Record<string, { resources: Record<string, number> }>;
+      };
+      expect(view.actors["atlantic-federation"]?.resources.economy).toBe(10);
+    });
+  });
+
   it("returns example world when configured", async () => {
     await withServer(
       {

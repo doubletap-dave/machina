@@ -142,6 +142,13 @@ export class MachinaClient {
     return this.#readOk(response);
   }
 
+  async applyIntervention(
+    runId: string,
+    payload: { path: string; value: unknown; noticeable: boolean },
+  ): Promise<void> {
+    await this.#postJson(`/runs/${runId}/interventions`, payload);
+  }
+
   async loadExampleWorld(): Promise<MachinaProject> {
     const response = await fetch(`${this.#baseUrl}/examples/world`);
     return this.#readOk(response);
