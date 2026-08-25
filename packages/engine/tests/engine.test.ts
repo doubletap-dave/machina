@@ -74,6 +74,30 @@ describe("openEngine", () => {
       "No language model is configured. Possess the agent or set an API key.",
     );
   });
+
+  it("pause refuses step until resume", async () => {
+    const engine = await openEngine(dir, { think: waitThink });
+    const run = await engine.start({ seed: 7 });
+    const { turn } = await run.step();
+    expect(turn).toBe(1);
+    run.pause();
+    await expect(run.step()).rejects.toThrow("The world is paused.");
+    expect(run.getSummary().turn).toBe(1);
+    run.resume();
+    const next = await run.step();
+    expect(next.turn).toBe(2);
+  });
+
+  it("pauses after missing think so the next step does not advance", async () => {
+    const engine = await openEngine(dir);
+    const run = await engine.start({ seed: 1 });
+    await expect(run.step()).rejects.toThrow(
+      "No language model is configured. Possess the agent or set an API key.",
+    );
+    const turnAfterFail = run.getSummary().turn;
+    await expect(run.step()).rejects.toThrow("The world is paused.");
+    expect(run.getSummary().turn).toBe(turnAfterFail);
+  });
 });
 
 describe("openEngineFromProject", () => {

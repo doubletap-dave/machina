@@ -77,6 +77,7 @@ function createRun(
   const errors: MachinaError[] = [];
   const cost = 0;
   const id = crypto.randomUUID();
+  let pendingIntervention = false;
 
   const kernel = createKernelFromPlan(plan, {
     seed: startOpts.seed,
@@ -99,8 +100,17 @@ function createRun(
   return {
     id,
     async step() {
-      await kernel.runTurn();
-      return { turn: kernel.getTruth().turn };
+      if (kernel.paused && !pendingIntervention) {
+        throw new Error("The world is paused.");
+      }
+      try {
+        await kernel.runTurn();
+        pendingIntervention = false;
+        return { turn: kernel.getTruth().turn };
+      } catch (error) {
+        kernel.paused = true;
+        throw error;
+      }
     },
     pause() {
       kernel.paused = true;
@@ -124,6 +134,7 @@ function createRun(
     },
     applyIntervention(payload) {
       kernel.applyIntervention(payload);
+      pendingIntervention = true;
     },
     observation(actorId) {
       return kernel.peekPacket(actorId);
