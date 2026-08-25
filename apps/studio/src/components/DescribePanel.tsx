@@ -2,9 +2,12 @@
 
 import { composeFromDescription } from "@machina/graph";
 import { useCallback, useState } from "react";
-import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
 import { getStudioClient } from "@/lib/machina-client";
-import { createMockComposeProposer } from "@/presets/compose-proposer";
+import { modelConfigured } from "@/lib/model-configured";
+import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
+
+const NO_MODEL =
+  "No language model is configured. Build by hand or set an API key.";
 
 type DescribePanelProps = {
   onError: (message: string) => void;
@@ -23,13 +26,19 @@ export function DescribePanel({ onError, onSuccess }: DescribePanelProps) {
       return;
     }
 
+    if (!modelConfigured()) {
+      onError(NO_MODEL);
+      return;
+    }
+
     setBusy(true);
     try {
-      const proposer = createMockComposeProposer(store.getProject());
       const result = await composeFromDescription(
         prompt,
         registry,
-        async (text, kinds) => proposer(text, kinds),
+        async () => {
+          throw new Error(NO_MODEL);
+        },
         async (project) => {
           const compiled = await getStudioClient().compile(project);
           return { ok: compiled.ok, message: compiled.ok ? undefined : compiled.errors[0]?.message };

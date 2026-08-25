@@ -1,20 +1,22 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useLayoutEffect, useState } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { InstrumentMsg, ObservationPacket } from "@machina/core";
 import { createStudioRegistry } from "@/lib/create-studio-registry";
 import { ProjectStoreProvider, useProjectSnapshot } from "@/lib/project-store-context";
 import { RunPanel } from "./RunPanel";
 
-const { subscribe } = vi.hoisted(() => ({
+const { compile, startRun, subscribe } = vi.hoisted(() => ({
+  compile: vi.fn(),
+  startRun: vi.fn(),
   subscribe: vi.fn<(onMessage: (msg: InstrumentMsg) => void) => () => void>(),
 }));
 
 vi.mock("@/lib/machina-client", () => ({
   getStudioClient: () => ({
-    compile: vi.fn(),
-    startRun: vi.fn(),
+    compile,
+    startRun,
     step: vi.fn(),
     pause: vi.fn(),
     rewind: vi.fn(),
@@ -63,9 +65,17 @@ function renderRunPanel(onError: (message: string) => void = () => {}) {
 }
 
 describe("RunPanel", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     subscribe.mockReset();
     subscribe.mockImplementation(() => () => {});
+    compile.mockReset();
+    startRun.mockReset();
+    compile.mockResolvedValue({ ok: true, plan: {} });
+    startRun.mockResolvedValue({ id: "run-1" });
   });
 
   it("hides possess-panel until a possess-wait packet arrives and never shows chainOfThought", async () => {
@@ -78,7 +88,8 @@ describe("RunPanel", () => {
 
     renderRunPanel();
 
-    await user.click(await screen.findByRole("button", { name: "possess" }));
+    const stance = await screen.findByRole("group", { name: "Run stance" });
+    await user.click(within(stance).getByRole("button", { name: "possess" }));
     expect(screen.queryByTestId("possess-panel")).not.toBeInTheDocument();
 
     act(() => {
@@ -89,5 +100,23 @@ describe("RunPanel", () => {
     expect(screen.getByRole("button", { name: "wait" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "signal" })).toBeInTheDocument();
     expect(document.body.innerHTML).not.toContain("chainOfThought");
+  });
+
+  it("startRun sends the current stance and possessNodeId", async () => {
+    const user = userEvent.setup();
+    renderRunPanel();
+
+    const stance = await screen.findByRole("group", { name: "Run stance" });
+    await user.click(within(stance).getByRole("button", { name: "possess" }));
+    await user.click(screen.getByRole("button", { name: "Start run" }));
+
+    expect(startRun).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stance: "possess",
+        possessNodeId: expect.any(String),
+      }),
+    );
+    const body = startRun.mock.calls[0]?.[0] as { possessNodeId?: string };
+    expect(body.possessNodeId?.length).toBeGreaterThan(0);
   });
 });

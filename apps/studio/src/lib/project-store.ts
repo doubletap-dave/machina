@@ -7,19 +7,14 @@ import {
   type MachinaProject,
 } from "@machina/core";
 import type { NodeRegistry } from "@machina/node-sdk";
+import type { Preset } from "@machina/plugin-core";
+import { materializePreset } from "@/presets/materialize-preset.ts";
+import { starterProject } from "@/templates/starter.ts";
 
 type Listener = () => void;
 
 function emptyProject(): MachinaProject {
-  const entryGraphId = crypto.randomUUID();
-  return {
-    schemaVersion: 1,
-    id: crypto.randomUUID(),
-    name: "Untitled",
-    entryGraphId,
-    graphs: [{ id: entryGraphId, nodes: [], edges: [] }],
-    presetRefs: [],
-  };
+  return starterProject();
 }
 
 function defaultConfig(registry: NodeRegistry, kind: string, version: number): unknown {
@@ -72,6 +67,33 @@ export function createProjectStore(registry: NodeRegistry) {
 
     getProject(): MachinaProject {
       return project;
+    },
+
+    replaceProject(next: MachinaProject): void {
+      project = structuredClone(next);
+      currentGraphId = project.entryGraphId;
+      selectedNodeId = null;
+      emit();
+    },
+
+    insertPreset(preset: Preset, origin: { x: number; y: number }): MachinaNode[] {
+      const { rootNodes, rootEdges, extraGraphs } = materializePreset(
+        preset,
+        currentGraphId,
+        origin,
+      );
+      const graph = currentGraph();
+      graph.nodes.push(...rootNodes);
+      graph.edges.push(...rootEdges);
+      project = {
+        ...project,
+        graphs: [...project.graphs, ...extraGraphs],
+        presetRefs: project.presetRefs.includes(preset.id)
+          ? project.presetRefs
+          : [...project.presetRefs, preset.id],
+      };
+      emit();
+      return rootNodes;
     },
 
     getCurrentGraphId(): string {

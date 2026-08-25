@@ -136,19 +136,22 @@ export function StudioShell() {
             <Inspector />
           </>
         ) : mode === "run" ? (
-          <>
-            <main className="relative min-w-0 flex-1">
-              <CanvasProvider onEdgeError={showError} />
-            </main>
-            <aside className="w-72 border-l border-neutral-800 bg-neutral-950">
-              <RunPanel onError={showError} />
-            </aside>
-          </>
-        ) : (
-          <aside className="w-full border-l border-neutral-800 bg-neutral-950 p-4">
-            <RunPanel onError={showError} />
-          </aside>
-        )}
+          <main className="relative min-w-0 flex-1">
+            <CanvasProvider onEdgeError={showError} />
+          </main>
+        ) : null}
+
+        <aside
+          className={
+            mode === "build"
+              ? "hidden"
+              : mode === "analyze"
+                ? "w-full border-l border-neutral-800 bg-neutral-950 p-4"
+                : "w-72 border-l border-neutral-800 bg-neutral-950"
+          }
+        >
+          <RunPanel onError={showError} />
+        </aside>
       </div>
 
       <CommandPalette

@@ -16,11 +16,14 @@ describe("StudioShell library", () => {
           onAddKind={(kind) => {
             addedKind = kind;
           }}
+          onInsertPreset={() => {}}
+          onLoadTemplate={() => {}}
         />
       </ProjectStoreProvider>,
     );
 
     expect(screen.getByText("Personality")).toBeInTheDocument();
+    expect(screen.getByText("Atlantic Federation")).toBeInTheDocument();
     expect(screen.queryByText("cognition.personality")).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Personality" }));

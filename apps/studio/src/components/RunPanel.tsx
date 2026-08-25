@@ -50,7 +50,12 @@ export function RunPanel({ onError }: RunPanelProps) {
         onError(compiled.errors.map((error) => error.message).join(" "));
         return;
       }
-      const result = await client.startRun({ project: store.getProject(), seed: 7 });
+      const result = await client.startRun({
+        project: store.getProject(),
+        seed: 7,
+        stance: stance.mode,
+        possessNodeId,
+      });
       setRunId(result.id);
       setTurn(0);
       setPaused(false);
@@ -60,7 +65,7 @@ export function RunPanel({ onError }: RunPanelProps) {
     } finally {
       setBusy(false);
     }
-  }, [onError, store]);
+  }, [onError, possessNodeId, stance.mode, store]);
 
   const step = useCallback(async () => {
     if (!runId) {
