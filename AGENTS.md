@@ -44,8 +44,9 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | Studio port-language | ✅ Done | `master` @ `ba311ca` | 9/9 (`@machina/ui`) · 89/89 (`@machina/studio`) |
 | Models and credentials | ✅ Done | `master` @ `2c23ff7` | 33/33 engine · 26/26 runtime · 10/10 client · 5/5 plugin-core · 99/99 studio |
 | Kind author | ✅ Done | `master` @ `176c7dd` | 37/37 engine · 27/27 runtime · 7/7 node-sdk · 112/112 studio |
+| Studio themes-fonts | ✅ Done | `master` @ `2d0b80b` | 12/12 (`@machina/ui`) · 119/119 (`@machina/studio`) |
 
-Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md` · `lane-studio-models.md` · `lane-studio-kind-author.md`
+Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md` · `lane-studio-models.md` · `lane-studio-kind-author.md` · `lane-studio-themes-fonts.md`
 
 ---
 
@@ -91,7 +92,7 @@ packages/core/src/
 packages/node-sdk/src/
   define-node.ts from-manifest.ts index.ts
 packages/ui/src/
-  english.ts tokens.ts port-language.ts index.ts
+  english.ts tokens.ts port-language.ts themes.ts fonts.ts index.ts
 plugins/core/src/
   index.ts presets/ kinds/
 packages/graph/           # Lane 1a ✅ — compile.ts; Lane 2a ✅ — compose.ts
@@ -113,6 +114,7 @@ apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a 
                           # Configuration — components/ConfigurationPage.tsx (Configure mode)
                           # kinds/ — KindAuthorForm, kind-library (~/.machina/kinds), validate-kind
                           # app/api/kind-library — Studio publish / add-from-library
+                          # themes-fonts — lib/studio-prefs.ts; components/AppearanceMenu.tsx, ThemeRoot.tsx
 apps/runtime/             # HTTP/CLI drive @machina/engine (app.ts, serve.ts, run-project.ts, cli.ts)
 apps/runtime/src/settings.ts # GET/PUT/DELETE /settings/* (no apiKey on GET); env overlay + in-memory verify
 apps/runtime/src/compose.ts  # POST /compose — same verified view as GET /settings/models
@@ -135,7 +137,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/plugin-core`:** `registerCoreKinds`, 14 kinds v1, `nationPreset`, `cabinetPreset`, `agencyPreset`, `listBuiltinPresets`, `Preset`
 
-**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`, `fontMono`, `animationDelayMs`, `PORT_LANGUAGE`, `portLanguage`, `kindNoRuntimeCopy`, `kindIdReservedCopy` (re-exports)
+**`@machina/ui`:** `portMismatchCopy`, `unknownKindCopy`, `versionMismatchCopy`, `missingClockCopy`, `canvasBg`, `accent`, `font`, `fontMono`, `animationDelayMs`, `PORT_LANGUAGE`, `portLanguage`, `kindNoRuntimeCopy`, `kindIdReservedCopy` (re-exports), `MachinaThemeId`, `THEME_LABELS`
 
 **`@machina/simulation`:** `createRng`, `createKernel`, `createKernelFromPlan`, `actorIdsFromPlan`, `Kernel`, `ThinkFn`, `InstrumentMsg` — **`TrueWorldState` is internal only**
 
@@ -163,7 +165,7 @@ pnpm test                              # workspace automated tests
 pnpm --filter @machina/engine test     # 37/37 in-process engine (credentials, list-models, createLlmThink, kind start-refuse)
 pnpm --filter @machina/runtime test    # 27/27 including settings HTTP + compose + kind compile/start
 pnpm --filter @machina/client test     # 10/10 HTTP + WS + settings + compose
-pnpm --filter @machina/studio test     # 112/112 including kind author + library
+pnpm --filter @machina/studio test     # 119/119 including kind author + themes/fonts
 
 # Add a dependency to a package (example)
 cd packages/graph
