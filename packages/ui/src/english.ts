@@ -20,3 +20,11 @@ export function missingClockCopy(): string {
 export function operatorName(def: { metadata: { name: string } }): string {
   return def.metadata.name;
 }
+
+export {
+  kindNoRuntimeCopy,
+  kindPinMismatchCopy,
+  kindUnpinnedFileCopy,
+  kindPinMissingFileCopy,
+  kindIdReservedCopy,
+} from "@machina/core";

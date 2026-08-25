@@ -1,5 +1,10 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
-import type { AgentAction, MachinaProject, SimulationPlan } from "@machina/core";
+import type {
+  AgentAction,
+  KindManifest,
+  MachinaProject,
+  SimulationPlan,
+} from "@machina/core";
 import { openEngineFromProject, type EngineRun, type InvokeChat } from "@machina/engine";
 import type { ThinkFn } from "@machina/simulation";
 import { toWs } from "./instrumentation.ts";
@@ -11,7 +16,10 @@ type CompileResult =
   | { errors: Array<{ message: string }>; plan?: undefined }
   | { errors: []; plan: SimulationPlan };
 
-type CompileFn = (project: MachinaProject) => CompileResult;
+type CompileFn = (
+  project: MachinaProject,
+  kinds?: KindManifest[],
+) => CompileResult;
 
 export type RuntimeDeps = {
   compile: CompileFn;
@@ -47,6 +55,27 @@ async function readJson<T>(req: IncomingMessage): Promise<T> {
   }
   const text = Buffer.concat(chunks).toString("utf8");
   return text ? (JSON.parse(text) as T) : ({} as T);
+}
+
+function parseProjectKinds(body: unknown): {
+  project: MachinaProject;
+  kinds: KindManifest[];
+} {
+  if (
+    body &&
+    typeof body === "object" &&
+    "project" in body &&
+    body.project &&
+    typeof body.project === "object" &&
+    "graphs" in body.project
+  ) {
+    const wrapped = body as { project: MachinaProject; kinds?: KindManifest[] };
+    return {
+      project: wrapped.project,
+      kinds: Array.isArray(wrapped.kinds) ? wrapped.kinds : [],
+    };
+  }
+  return { project: body as MachinaProject, kinds: [] };
 }
 
 function runPath(url: string): { runId: string; action: string } | null {
@@ -96,8 +125,8 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
       }
 
       if (method === "POST" && url === "/compile") {
-        const project = await readJson<MachinaProject>(req);
-        const result = deps.compile(project);
+        const { project, kinds } = parseProjectKinds(await readJson(req));
+        const result = deps.compile(project, kinds);
         if (result.errors.length > 0) {
           sendJson(res, 400, { errors: result.errors });
           return;
@@ -112,22 +141,37 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
           seed: number;
           stance?: Stance;
           possessNodeId?: string;
+          kinds?: KindManifest[];
         }>(req);
         if (!deps.openEngineFromProject) {
           sendJson(res, 503, { message: "Runtime piece not ready." });
           return;
         }
-        const engine = deps.openEngineFromProject(body.project, { think: deps.think });
+        const engine = deps.openEngineFromProject(body.project, {
+          think: deps.think,
+          kinds: body.kinds,
+          homedir: deps.homedir,
+        });
         const compiled = engine.compile();
         if (!compiled.ok) {
           sendJson(res, 400, { errors: compiled.errors });
           return;
         }
-        const engineRun = await engine.start({
-          seed: body.seed,
-          stance: body.stance,
-          possessNodeId: body.possessNodeId,
-        });
+        let engineRun: EngineRun;
+        try {
+          engineRun = await engine.start({
+            seed: body.seed,
+            stance: body.stance,
+            possessNodeId: body.possessNodeId,
+          });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Request failed.";
+          sendJson(res, 400, {
+            message,
+            errors: [{ code: "KIND_NO_RUNTIME", message }],
+          });
+          return;
+        }
         engineRun.subscribe((msg) => {
           server.emit("instrument", toWs(msg));
         });

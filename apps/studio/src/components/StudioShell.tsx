@@ -83,7 +83,10 @@ export function StudioShell() {
   );
 
   const validateProject = useCallback(async () => {
-    const result = await getStudioClient().compile(store.getProject());
+    const result = await getStudioClient().compile(
+      store.getProject(),
+      store.getKinds(),
+    );
     if (!result.ok) {
       showError(result.errors.map((error) => error.message).join(" "));
       return;

@@ -3,7 +3,7 @@ import type { Server } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { InstrumentMsg, MachinaProject } from "@machina/core";
+import type { InstrumentMsg, KindManifest, MachinaProject } from "@machina/core";
 import { keyRefusedCopy } from "@machina/core";
 import {
   credentialsPath,
@@ -11,7 +11,7 @@ import {
   type InvokeChat,
 } from "@machina/engine";
 import { compile } from "@machina/graph";
-import { createRegistry } from "@machina/node-sdk";
+import { createRegistry, kindManifestToDefinition } from "@machina/node-sdk";
 import { registerCoreKinds } from "@machina/plugin-core";
 import { createApp } from "@machina/runtime";
 import { MachinaClient } from "../src/client.ts";
@@ -45,9 +45,12 @@ const waitThink = async ({ packet }: { packet: { actorId: string } }) => ({
   params: {},
 });
 
-function realCompile(project: MachinaProject) {
+function realCompile(project: MachinaProject, kinds: KindManifest[] = []) {
   const registry = createRegistry();
   registerCoreKinds(registry);
+  for (const kind of kinds) {
+    registry.register(kindManifestToDefinition(kind));
+  }
   const result = compile(project, registry);
   if ("errors" in result) {
     return { errors: result.errors };

@@ -11,6 +11,9 @@ export default defineConfig({
   test: {
     setupFiles: ["./src/test-setup.ts"],
     environment: "jsdom",
-    environmentMatchGlobs: [["**/project-store.test.ts", "node"]],
+    environmentMatchGlobs: [
+      ["**/project-store.test.ts", "node"],
+      ["**/kind-library.test.ts", "node"],
+    ],
   },
 });

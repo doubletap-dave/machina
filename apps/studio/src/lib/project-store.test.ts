@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { kindHash, kindIdReservedCopy, type KindManifest } from "@machina/core";
 import { createRegistry } from "@machina/node-sdk";
 import { nationPreset, registerCoreKinds } from "@machina/plugin-core";
 import { starterProject } from "../templates/starter.ts";
@@ -438,6 +439,76 @@ describe("createProjectStore", () => {
     expect(store.getCurrentGraph().nodes.find((candidate) => candidate.id === resource.id)).toBeDefined();
   });
 
+  it("refuses a reserved kind id", async () => {
+    const store = createProjectStore(testRegistry());
+    const err = await store.upsertKind(radioDeskManifest({ id: "entities.actor" }));
+    expect(err).toBe(kindIdReservedCopy());
+    expect(store.getKinds()).toEqual([]);
+  });
+
+  it("saves a custom kind, pins its hash, and registers it", async () => {
+    const registry = testRegistry();
+    const store = createProjectStore(registry);
+    const manifest = radioDeskManifest();
+    expect(await store.upsertKind(manifest)).toBeNull();
+    expect(store.getKinds()).toEqual([manifest]);
+    expect(store.getKindPins()).toEqual([
+      { id: "custom.radio-desk", version: 1, hash: await kindHash(manifest) },
+    ]);
+    expect(registry.get("custom.radio-desk", 1)?.metadata.name).toBe("Radio desk");
+  });
+
+  it("drops edges when a kind port is removed, in every graph", async () => {
+    const store = createProjectStore(testRegistry());
+    expect(await store.upsertKind(radioDeskManifest())).toBeNull();
+    const desk = store.addNode("custom.radio-desk", { x: 0, y: 0 });
+    expect(
+      store.addEdge({
+        sourceNode: "clock",
+        sourcePort: "tick",
+        targetNode: desk.id,
+        targetPort: "clock",
+      }),
+    ).toBeNull();
+    expect(store.getCurrentGraph().edges.some((edge) => edge.targetNode === desk.id)).toBe(true);
+
+    expect(
+      await store.upsertKind(
+        radioDeskManifest({
+          ports: {},
+        }),
+      ),
+    ).toBeNull();
+
+    expect(
+      store.getProject().graphs.some((graph) =>
+        graph.edges.some(
+          (edge) =>
+            (edge.sourceNode === desk.id && edge.sourcePort === "clock") ||
+            (edge.targetNode === desk.id && edge.targetPort === "clock"),
+        ),
+      ),
+    ).toBe(false);
+  });
+
+  it("applies new field defaults and drops removed field keys on existing nodes", async () => {
+    const store = createProjectStore(testRegistry());
+    expect(await store.upsertKind(radioDeskManifest())).toBeNull();
+    const desk = store.addNode("custom.radio-desk", { x: 0, y: 0 });
+    expect(desk.config).toEqual({ label: "desk" });
+
+    expect(
+      await store.upsertKind(
+        radioDeskManifest({
+          fields: [{ key: "count", label: "Count", type: "number", default: 2 }],
+        }),
+      ),
+    ).toBeNull();
+
+    const updated = store.getCurrentGraph().nodes.find((node) => node.id === desk.id);
+    expect(updated?.config).toEqual({ count: 2 });
+  });
+
   it("insertPreset then undo restores prior graph counts", () => {
     const store = createProjectStore(testRegistry());
     const nodeCount = store.getCurrentGraph().nodes.length;
@@ -452,6 +523,28 @@ describe("createProjectStore", () => {
     expect(store.getProject().graphs).toHaveLength(graphCount);
   });
 });
+
+function radioDeskManifest(overrides: Partial<KindManifest> = {}): KindManifest {
+  return {
+    schemaVersion: 1,
+    id: "custom.radio-desk",
+    version: 1,
+    name: "Radio desk",
+    category: "Systems",
+    cardColor: "#aabbcc",
+    ports: {
+      clock: {
+        name: "clock",
+        dir: "in",
+        type: "CLOCK",
+        cardinality: "exclusive",
+        label: "Clock",
+      },
+    },
+    fields: [{ key: "label", label: "Label", type: "string", default: "desk" }],
+    ...overrides,
+  };
+}
 
 function clockConfig(store: ReturnType<typeof createProjectStore>) {
   return store.getCurrentGraph().nodes.find((node) => node.id === "clock")?.config;

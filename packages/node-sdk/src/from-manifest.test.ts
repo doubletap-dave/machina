@@ -36,4 +36,32 @@ describe("kindManifestToDefinition", () => {
     expect(got.configSchema.parse({})).toEqual({ label: "desk" });
     expect(got.runtime).toBeUndefined();
   });
+
+  it("parses number, boolean, and enum fields", () => {
+    const def = kindManifestToDefinition({
+      ...radioDesk,
+      fields: [
+        { key: "count", label: "Count", type: "number", default: 3 },
+        { key: "live", label: "Live", type: "boolean", default: true },
+        { key: "band", label: "Band", type: "enum", options: ["am", "fm"], default: "fm" },
+      ],
+    });
+
+    expect(def.configSchema.parse({})).toEqual({ count: 3, live: true, band: "fm" });
+    expect(def.configSchema.parse({ count: 8, live: false, band: "am" })).toEqual({
+      count: 8,
+      live: false,
+      band: "am",
+    });
+  });
+
+  it("does not call z.enum with an empty options list", () => {
+    const def = kindManifestToDefinition({
+      ...radioDesk,
+      fields: [{ key: "band", label: "Band", type: "enum" }],
+    });
+
+    expect(() => def.configSchema.parse({ band: "shortwave" })).not.toThrow();
+    expect(def.configSchema.parse({ band: "shortwave" })).toEqual({ band: "shortwave" });
+  });
 });

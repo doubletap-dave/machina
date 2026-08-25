@@ -35,6 +35,10 @@ vi.mock("@/lib/machina-client", () => ({
   }),
 }));
 
+vi.mock("@/kinds/kind-library-client", () => ({
+  browserKindLibrary: undefined,
+}));
+
 describe("StudioShell library", () => {
   it("shows human names and adds a node when clicked", async () => {
     const user = userEvent.setup();
@@ -60,6 +64,7 @@ describe("StudioShell library", () => {
     expect(screen.queryByText("cognition.personality")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "New world" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Example world" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New kind" })).toBeInTheDocument();
     expect(screen.getAllByRole("heading").map((el) => el.textContent)).toEqual([
       "Presets",
       "Templates",

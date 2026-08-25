@@ -16,8 +16,11 @@ function fieldSchema(field: KindField): ZodTypeAny {
     case "boolean":
       return withDefault(z.boolean(), field.default);
     case "enum": {
-      const options = (field.options ?? []) as [string, ...string[]];
-      return withDefault(z.enum(options), field.default);
+      const options = field.options ?? [];
+      if (options.length === 0) {
+        return withDefault(z.string(), field.default);
+      }
+      return withDefault(z.enum(options as [string, ...string[]]), field.default);
     }
   }
 }

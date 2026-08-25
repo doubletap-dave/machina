@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Server } from "node:http";
 import { resolve } from "node:path";
-import type { MachinaProject } from "@machina/core";
+import { kindNoRuntimeCopy, type KindManifest, type MachinaProject } from "@machina/core";
 import { openEngineFromProject } from "@machina/engine";
+import { compile } from "@machina/graph";
 import { loadProject } from "@machina/persistence";
+import { createRegistry, kindManifestToDefinition } from "@machina/node-sdk";
+import { registerCoreKinds } from "@machina/plugin-core";
 import type { ThinkFn } from "@machina/simulation";
 import { createApp } from "../src/app.ts";
 
@@ -240,5 +243,99 @@ describe("HTTP control plane", () => {
       const summary = await fetch(`${base}/runs/${id}`);
       expect((await summary.json()).turn).toBe(1);
     });
+  });
+
+  it("compiles a custom kind then refuses start without runtime", async () => {
+    const fooKind: KindManifest = {
+      schemaVersion: 1,
+      id: "custom.foo",
+      version: 1,
+      name: "Foo",
+      category: "Systems",
+      cardColor: "#112233",
+      ports: {
+        tick: {
+          name: "tick",
+          dir: "in",
+          type: "CLOCK",
+          cardinality: "exclusive",
+          label: "when time moves",
+        },
+      },
+      fields: [],
+    };
+    const fooProject: MachinaProject = {
+      schemaVersion: 1,
+      id: "foo-world",
+      name: "Foo",
+      entryGraphId: "g",
+      presetRefs: [],
+      graphs: [
+        {
+          id: "g",
+          nodes: [
+            {
+              id: "clock",
+              kind: "control.clock",
+              version: 1,
+              position: { x: 0, y: 0 },
+              config: { period: "month" },
+            },
+            {
+              id: "foo",
+              kind: "custom.foo",
+              version: 1,
+              position: { x: 0, y: 0 },
+              config: {},
+            },
+          ],
+          edges: [
+            {
+              id: "e-clock-foo",
+              sourceNode: "clock",
+              sourcePort: "tick",
+              targetNode: "foo",
+              targetPort: "tick",
+            },
+          ],
+        },
+      ],
+    };
+
+    await withServer(
+      {
+        compile(project, kinds = []) {
+          const registry = createRegistry();
+          registerCoreKinds(registry);
+          for (const kind of kinds) {
+            registry.register(kindManifestToDefinition(kind));
+          }
+          const result = compile(project, registry);
+          if ("errors" in result) {
+            return { errors: result.errors };
+          }
+          return { errors: [] as [], plan: result.plan };
+        },
+        openEngineFromProject,
+        think: waitThink,
+      },
+      async (base) => {
+        const compiled = await fetch(`${base}/compile`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ project: fooProject, kinds: [fooKind] }),
+        });
+        expect(compiled.status).toBe(200);
+
+        const started = await fetch(`${base}/runs`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ project: fooProject, seed: 1, kinds: [fooKind] }),
+        });
+        expect(started.status).toBe(400);
+        const body = (await started.json()) as { message: string };
+        expect(body.message).toBe(kindNoRuntimeCopy("Foo", "custom.foo"));
+      },
+    );
   });
 });

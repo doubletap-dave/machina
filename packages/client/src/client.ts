@@ -1,6 +1,7 @@
 import type {
   AgentAction,
   InstrumentMsg,
+  KindManifest,
   MachinaError,
   MachinaProject,
   SimulationPlan,
@@ -50,11 +51,14 @@ export class MachinaClient {
     this.#wsUrl = opts.wsUrl ?? defaultWsUrl(this.#baseUrl);
   }
 
-  async compile(project: MachinaProject): Promise<CompileOutcome> {
+  async compile(
+    project: MachinaProject,
+    kinds: KindManifest[] = [],
+  ): Promise<CompileOutcome> {
     const response = await fetch(`${this.#baseUrl}/compile`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(project),
+      body: JSON.stringify({ project, kinds }),
     });
     const body = (await response.json()) as {
       plan?: SimulationPlan;
@@ -92,6 +96,7 @@ export class MachinaClient {
     seed: number;
     stance?: string;
     possessNodeId?: string;
+    kinds?: KindManifest[];
   }): Promise<{ id: string }> {
     return this.#postJson("/runs", body);
   }

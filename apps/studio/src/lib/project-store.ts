@@ -1,13 +1,16 @@
 import {
+  kindHash,
   matchPorts,
   type GraphDocument,
+  type KindManifest,
   type MachinaEdge,
   type MachinaError,
   type MachinaNode,
   type MachinaProject,
 } from "@machina/core";
-import type { NodeRegistry } from "@machina/node-sdk";
+import { kindManifestToDefinition, type NodeRegistry } from "@machina/node-sdk";
 import type { Preset } from "@machina/plugin-core";
+import { validateKind } from "@/kinds/validate-kind.ts";
 import { materializePreset } from "@/presets/materialize-preset.ts";
 import { starterProject } from "@/templates/starter.ts";
 import {
@@ -16,6 +19,8 @@ import {
   duplicateNodesInProject,
 } from "./graph-edit.ts";
 import { createUndoStack, type EditorSnapshot } from "./undo-stack.ts";
+
+type KindPin = { id: string; version: number; hash: string };
 
 type Listener = () => void;
 
@@ -37,6 +42,9 @@ export function createProjectStore(registry: NodeRegistry) {
   let selectedNodeId: string | null = null;
   let revision = 0;
   let dragging = false;
+  let kinds: KindManifest[] = [];
+  let kindPins: KindPin[] = [];
+  let authoringKind = false;
   const history = createUndoStack(50);
   const redos: EditorSnapshot[] = [];
   const listeners = new Set<Listener>();
@@ -109,6 +117,33 @@ export function createProjectStore(registry: NodeRegistry) {
     emit();
   }
 
+  async function upsertKind(manifest: KindManifest): Promise<string | null> {
+    const owned = kinds.map((kind) => kind.id);
+    const err = validateKind(manifest, registry, owned);
+    if (err) {
+      return err;
+    }
+    const previous = kinds.find((kind) => kind.id === manifest.id);
+    const stored = structuredClone(manifest);
+    const hash = await kindHash(stored);
+    registry.register(kindManifestToDefinition(stored));
+    kinds = previous
+      ? kinds.map((kind) => (kind.id === stored.id ? stored : kind))
+      : [...kinds, stored];
+    const pin: KindPin = { id: stored.id, version: stored.version, hash };
+    const pinAt = kindPins.findIndex((item) => item.id === stored.id);
+    if (pinAt >= 0) {
+      kindPins[pinAt] = pin;
+    } else {
+      kindPins = [...kindPins, pin];
+    }
+    if (previous) {
+      applyKindGraphUpdates(project, previous, stored);
+    }
+    emit();
+    return null;
+  }
+
   return {
     subscribe(listener: Listener): () => void {
       listeners.add(listener);
@@ -128,6 +163,9 @@ export function createProjectStore(registry: NodeRegistry) {
       currentGraphId = project.entryGraphId;
       selectedNodeId = null;
       dragging = false;
+      kinds = [];
+      kindPins = [];
+      authoringKind = false;
       history.clear();
       redos.length = 0;
       emit();
@@ -247,6 +285,9 @@ export function createProjectStore(registry: NodeRegistry) {
 
     selectNode(nodeId: string | null): void {
       selectedNodeId = nodeId;
+      if (nodeId) {
+        authoringKind = false;
+      }
       emit();
     },
 
@@ -335,7 +376,80 @@ export function createProjectStore(registry: NodeRegistry) {
       applySnapshot(next);
       emit();
     },
+
+    getKinds(): KindManifest[] {
+      return kinds;
+    },
+
+    getKindPins(): KindPin[] {
+      return kindPins;
+    },
+
+    isAuthoringKind(): boolean {
+      return authoringKind;
+    },
+
+    beginAuthorKind(): void {
+      selectedNodeId = null;
+      authoringKind = true;
+      emit();
+    },
+
+    upsertKind,
+
+    addKindFromManifest: upsertKind,
+
+    updateKindPins(next: KindPin[]): void {
+      kindPins = structuredClone(next);
+      emit();
+    },
   };
+}
+
+function findNodeInProject(project: MachinaProject, nodeId: string): MachinaNode | undefined {
+  for (const graph of project.graphs) {
+    const node = graph.nodes.find((candidate) => candidate.id === nodeId);
+    if (node) {
+      return node;
+    }
+  }
+  return undefined;
+}
+
+function applyKindGraphUpdates(
+  project: MachinaProject,
+  previous: KindManifest,
+  next: KindManifest,
+): void {
+  const removedPorts = Object.keys(previous.ports).filter((port) => !(port in next.ports));
+  const fieldKeys = new Set(next.fields.map((field) => field.key));
+  const def = kindManifestToDefinition(next);
+
+  for (const graph of project.graphs) {
+    if (removedPorts.length > 0) {
+      graph.edges = graph.edges.filter((edge) => {
+        const source = findNodeInProject(project, edge.sourceNode);
+        const target = findNodeInProject(project, edge.targetNode);
+        if (source?.kind === next.id && removedPorts.includes(edge.sourcePort)) {
+          return false;
+        }
+        if (target?.kind === next.id && removedPorts.includes(edge.targetPort)) {
+          return false;
+        }
+        return true;
+      });
+    }
+    for (const node of graph.nodes) {
+      if (node.kind !== next.id) {
+        continue;
+      }
+      const prev = (node.config ?? {}) as Record<string, unknown>;
+      const stripped = Object.fromEntries(
+        Object.entries(prev).filter(([key]) => fieldKeys.has(key)),
+      );
+      node.config = def.configSchema.parse(stripped);
+    }
+  }
 }
 
 export type ProjectStore = ReturnType<typeof createProjectStore>;

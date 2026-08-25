@@ -1,25 +1,30 @@
+import type { KindManifest, MachinaProject } from "@machina/core";
 import { compile } from "@machina/graph";
 import { openEngineFromProject } from "@machina/engine";
 import { loadProject } from "@machina/persistence";
-import { createRegistry } from "@machina/node-sdk";
+import { createRegistry, kindManifestToDefinition } from "@machina/node-sdk";
 import { registerCoreKinds } from "@machina/plugin-core";
 import { resolve } from "node:path";
 import { createApp } from "./app.ts";
 
-const registry = createRegistry();
-registerCoreKinds(registry);
+function compileWithKinds(project: MachinaProject, kinds: KindManifest[] = []) {
+  const registry = createRegistry();
+  registerCoreKinds(registry);
+  for (const kind of kinds) {
+    registry.register(kindManifestToDefinition(kind));
+  }
+  const result = compile(project, registry);
+  if ("errors" in result) {
+    return { errors: result.errors };
+  }
+  return { errors: [] as [], plan: result.plan };
+}
 
 const exampleDir = resolve(import.meta.dirname, "../../../examples/dead-channel-lite");
 const port = Number(process.env.MACHINA_RUNTIME_PORT ?? process.env.PORT ?? 4000);
 
 const app = createApp({
-  compile(project) {
-    const result = compile(project, registry);
-    if ("errors" in result) {
-      return { errors: result.errors };
-    }
-    return { errors: [], plan: result.plan };
-  },
+  compile: compileWithKinds,
   openEngineFromProject,
   loadExampleProject: () => loadProject(exampleDir),
 });

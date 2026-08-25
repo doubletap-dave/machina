@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
   describeNoLlmCopy,
+  type KindManifest,
   type MachinaError,
   type MachinaProject,
 } from "@machina/core";
@@ -19,6 +20,7 @@ import { registerCoreKinds } from "@machina/plugin-core";
 
 type CompileFn = (
   project: MachinaProject,
+  kinds?: KindManifest[],
 ) => { errors: Array<{ message: string }>; plan?: unknown };
 
 export type ComposeDeps = {

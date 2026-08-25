@@ -61,7 +61,7 @@ export function RunPanel({
     const client = getStudioClient();
     setBusy(true);
     try {
-      const compiled = await client.compile(store.getProject());
+      const compiled = await client.compile(store.getProject(), store.getKinds());
       if (!compiled.ok) {
         onError(compiled.errors.map((error) => error.message).join(" "));
         return;
@@ -71,6 +71,7 @@ export function RunPanel({
         seed: 7,
         stance: stance.mode,
         possessNodeId,
+        kinds: store.getKinds(),
       });
       setRunId(result.id);
       setTurn(0);

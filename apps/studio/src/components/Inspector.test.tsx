@@ -17,6 +17,10 @@ vi.mock("@/lib/machina-client", () => ({
   }),
 }));
 
+vi.mock("@/kinds/kind-library-client", () => ({
+  browserKindLibrary: undefined,
+}));
+
 afterEach(() => {
   cleanup();
   getSettings.mockReset();

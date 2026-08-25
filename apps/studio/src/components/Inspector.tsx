@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from "react";
 import type { SettingsModels } from "@machina/client";
+import type { KindField } from "@machina/core";
 import { getStudioClient } from "@/lib/machina-client";
 import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
+import { KindAuthorForm } from "@/kinds/KindAuthorForm";
+import { browserKindLibrary } from "@/kinds/kind-library-client";
 import { findNodeById } from "./Canvas";
 
 const PERSONALITY_FIELDS = ["aggression", "paranoia", "cooperation", "risk"] as const;
@@ -25,6 +28,14 @@ export function Inspector() {
         setSettings(null);
       });
   }, []);
+
+  if (store.isAuthoringKind()) {
+    return (
+      <aside className="w-64 overflow-y-auto border-l border-neutral-800 bg-neutral-950 p-3">
+        <KindAuthorForm library={browserKindLibrary} />
+      </aside>
+    );
+  }
 
   if (!selected) {
     return (
@@ -123,7 +134,11 @@ export function Inspector() {
           </label>
         </div>
       ) : (
-        <p className="text-xs text-neutral-500">No editable fields for this node yet.</p>
+        <ManifestFields
+          fields={store.getKinds().find((kind) => kind.id === selected.kind)?.fields ?? []}
+          config={config}
+          onChange={(patch) => store.updateNodeConfig(selected.id, patch)}
+        />
       )}
 
       {selected.subgraphId ? (
@@ -136,5 +151,72 @@ export function Inspector() {
         </button>
       ) : null}
     </aside>
+  );
+}
+
+function ManifestFields({
+  fields,
+  config,
+  onChange,
+}: {
+  fields: KindField[];
+  config: Record<string, number | string | boolean | undefined>;
+  onChange: (patch: Record<string, unknown>) => void;
+}) {
+  if (fields.length === 0) {
+    return <p className="text-xs text-neutral-500">No editable fields for this node yet.</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {fields.map((field) => {
+        if (field.type === "boolean") {
+          return (
+            <label key={field.key} className="flex items-center gap-2 text-xs text-neutral-400">
+              <input
+                type="checkbox"
+                checked={Boolean(config[field.key] ?? field.default ?? false)}
+                onChange={(event) => onChange({ [field.key]: event.target.checked })}
+              />
+              {field.label}
+            </label>
+          );
+        }
+        if (field.type === "enum") {
+          return (
+            <label key={field.key} className="block text-xs text-neutral-400">
+              {field.label}
+              <select
+                className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+                value={String(config[field.key] ?? field.default ?? "")}
+                onChange={(event) => onChange({ [field.key]: event.target.value })}
+              >
+                {(field.options ?? []).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </label>
+          );
+        }
+        return (
+          <label key={field.key} className="block text-xs text-neutral-400">
+            {field.label}
+            <input
+              type={field.type === "number" ? "number" : "text"}
+              className="mt-1 w-full rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-sm text-neutral-100"
+              value={String(config[field.key] ?? field.default ?? "")}
+              onChange={(event) =>
+                onChange({
+                  [field.key]:
+                    field.type === "number" ? Number(event.target.value) : event.target.value,
+                })
+              }
+            />
+          </label>
+        );
+      })}
+    </div>
   );
 }

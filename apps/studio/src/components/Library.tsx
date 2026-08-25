@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { listBuiltinPresets, type Preset } from "@machina/plugin-core";
 import { KIND_GROUP_ORDER, paletteGroup } from "@/lib/library-groups";
-import { useRegistry } from "@/lib/project-store-context";
+import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
 
 type LibraryProps = {
   onAddKind: (kind: string) => void;
@@ -13,10 +13,16 @@ type LibraryProps = {
 
 export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryProps) {
   const registry = useRegistry();
+  const store = useProjectSnapshot();
+  const revision = store.getRevision();
   const presets = useMemo(() => listBuiltinPresets(), []);
   const grouped = useMemo(() => {
+    const projectKindIds = new Set(store.getKinds().map((kind) => kind.id));
     const byGroup = new Map<string, { kind: string; name: string }[]>();
     for (const def of registry.list()) {
+      if (def.type.startsWith("custom.") && !projectKindIds.has(def.type)) {
+        continue;
+      }
       const group = paletteGroup(def.type, def.metadata.category);
       const items = byGroup.get(group) ?? [];
       items.push({ kind: def.type, name: def.metadata.name });
@@ -26,7 +32,7 @@ export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryPr
       group,
       items: byGroup.get(group) ?? [],
     }));
-  }, [registry]);
+  }, [registry, revision, store]);
 
   return (
     <aside className="flex w-56 flex-col border-r border-neutral-800 bg-neutral-950 p-3">
@@ -67,6 +73,16 @@ export function Library({ onAddKind, onInsertPreset, onLoadTemplate }: LibraryPr
                 onClick={() => onLoadTemplate("example")}
               >
                 Example world
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                name="New kind"
+                className="w-full rounded px-2 py-1 text-left text-sm text-neutral-200 hover:bg-neutral-800"
+                onClick={() => store.beginAuthorKind()}
+              >
+                New kind
               </button>
             </li>
           </ul>
