@@ -32,19 +32,19 @@ importers:
       '@machina/node-sdk':
         specifier: workspace:*
         version: link:../../packages/node-sdk
-      '@machina/persistence':
-        specifier: workspace:*
-        version: link:../../packages/persistence
       '@machina/plugin-core':
         specifier: workspace:*
         version: link:../../plugins/core
-      '@machina/simulation':
-        specifier: workspace:*
-        version: link:../../packages/simulation
       ws:
         specifier: ^8.18.1
         version: 8.21.3
     devDependencies:
+      '@machina/persistence':
+        specifier: workspace:*
+        version: link:../../packages/persistence
+      '@machina/simulation':
+        specifier: workspace:*
+        version: link:../../packages/simulation
       '@types/ws':
         specifier: ^8.5.14
         version: 8.18.1
@@ -57,9 +57,6 @@ importers:
       '@machina/core':
         specifier: workspace:^
         version: link:../../packages/core
-      '@machina/graph':
-        specifier: workspace:^
-        version: link:../../packages/graph
       '@machina/node-sdk':
         specifier: workspace:^
         version: link:../../packages/node-sdk
