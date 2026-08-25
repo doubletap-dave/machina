@@ -47,9 +47,9 @@ Path `join(homedir(), ".machina", "credentials.json")`. `homedir` injectable. `p
 
 `listAndVerify(provider, apiKey, fetchImpl)` uses spec URLs/headers. 401 → `{ ok: false, message: keyRefusedCopy() }`. 200 → `{ ok: true, models: [{ id, name }] }`.
 
-- [ ] **Step 1: Tests** with stub fetch (no network): 401 and 200 Anthropic-shaped and OpenAI-shaped bodies.
+- [x] **Step 1: Tests** with stub fetch (no network): 401 and 200 Anthropic-shaped and OpenAI-shaped bodies.
 
-- [ ] **Step 2: Implement four providers. PASS. Commit** `feat: verify provider keys by listing models`
+- [x] **Step 2: Implement four providers. PASS. Commit** `feat: verify provider keys by listing models`
 
 ---
 

@@ -42,7 +42,7 @@ Do not leave AGENTS.md stale. A lane report without an AGENTS.md update is incom
 | **3 Dead Channel Lite** | **✅ Done** | **`master` @ `993fef8`** | **77/77 (`pnpm test`)** |
 | Studio canvas-ops | ⏳ In progress | `master` @ `71704b3` | 81/81 (`@machina/studio`) |
 | Studio port-language | ✅ Done | `master` @ `ba311ca` | 9/9 (`@machina/ui`) · 89/89 (`@machina/studio`) |
-| Studio models | ⏳ Task 1 | credentials + llm-english | 14/14 core · 13/13 engine |
+| Studio models | ⏳ Task 2 | list-models verify | 14/14 core · 23/23 engine |
 
 Reports: `docs/reports/wave0.md` · `lane-1a.md` · `lane-1b.md` · `lane-1c.md` · `lane-1d.md` · `lane-1e.md` · `lane-1f.md` · `lane-2a.md` · `lane-2b.md` · `wave3-dead-channel-lite.md` · `lane-studio-canvas-ops.md` · `lane-studio-port-language.md`
 
@@ -99,6 +99,7 @@ packages/agents/          # Lane 1c ✅ — graph.ts checkpointer.ts
 packages/persistence/     # Lane 1d ✅ — project-files.ts db.ts schema.ts
 packages/engine/          # openEngine, openEngineFromProject — in-process world runner
                           # credentials.ts — ~/.machina/credentials.json (Task 1)
+                          # list-models.ts — listAndVerify (Task 2; injectable fetch)
 packages/client/          # MachinaClient — browser-safe HTTP + WebSocket wrapper
 apps/studio/              # Lane 1e ✅ — project-store, StudioShell; Lane 2a presets/; Lane 2b run/
                           # canvas-ops — src/canvas/; lib/undo-stack.ts, lib/graph-edit.ts
@@ -131,7 +132,7 @@ Studio talks to runtime over HTTP/WS. Studio does **not** import kernel internal
 
 **`@machina/persistence`:** `saveProject`, `loadProject`, `createDb`, `ProjectMeta`, `MachinaDb`, `RunRecord`
 
-**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`, `loadCredentials`, `saveCredentials`, `publicProviderView`, `last4`, `restrictToOwner`, `ProviderId`, `CredentialsFile`
+**`@machina/engine`:** `openEngine`, `openEngineFromProject`, `MachinaEngine`, `EngineRun`, `CompileOutcome`, `loadCredentials`, `saveCredentials`, `publicProviderView`, `last4`, `restrictToOwner`, `ProviderId`, `CredentialsFile`, `listAndVerify`, `ListModelsResult`
 
 **`@machina/client`:** `MachinaClient`, `CompileOutcome` (local; do not import `@machina/engine`)
 
@@ -148,7 +149,7 @@ pnpm dev                               # browser: Studio @ :3000 + runtime @ :40
 pnpm dev:studio                        # Studio only
 pnpm dev:runtime                       # Runtime API only
 pnpm test                              # 77/77 automated tests
-pnpm --filter @machina/engine test     # 5/5 in-process engine
+pnpm --filter @machina/engine test     # 23/23 in-process engine
 pnpm --filter @machina/client test     # HTTP + WS wrapper against runtime listen(0)
 
 # Add a dependency to a package (example)

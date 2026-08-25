@@ -21,3 +21,5 @@ export type {
   ProviderRecord,
   PublicProviderView,
 } from "./credentials.ts";
+export { listAndVerify } from "./list-models.ts";
+export type { ListModelsResult } from "./list-models.ts";
