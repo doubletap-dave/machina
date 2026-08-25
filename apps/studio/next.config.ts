@@ -2,7 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   transpilePackages: [
+    "@machina/client",
     "@machina/core",
+    "@machina/graph",
     "@machina/node-sdk",
     "@machina/plugin-core",
     "@machina/ui",

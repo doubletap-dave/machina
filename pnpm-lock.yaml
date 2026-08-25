@@ -57,9 +57,15 @@ importers:
 
   apps/studio:
     dependencies:
+      '@machina/client':
+        specifier: workspace:^
+        version: link:../../packages/client
       '@machina/core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@machina/graph':
+        specifier: workspace:^
+        version: link:../../packages/graph
       '@machina/node-sdk':
         specifier: workspace:^
         version: link:../../packages/node-sdk

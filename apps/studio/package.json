@@ -10,7 +10,9 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@machina/client": "workspace:^",
     "@machina/core": "workspace:^",
+    "@machina/graph": "workspace:^",
     "@machina/node-sdk": "workspace:^",
     "@machina/plugin-core": "workspace:^",
     "@machina/ui": "workspace:^",
