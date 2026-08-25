@@ -11,14 +11,16 @@ import { CommandPalette, useCommandPaletteShortcut } from "./CommandPalette";
 import { DescribePanel } from "./DescribePanel";
 import { Inspector } from "./Inspector";
 import { Library } from "./Library";
+import { ConfigurationPage } from "./ConfigurationPage";
 import { RunPanel } from "./RunPanel";
 
-type StudioMode = "build" | "run" | "analyze";
+type StudioMode = "build" | "run" | "analyze" | "configure";
 
 const MODE_LABEL: Record<StudioMode, string> = {
   build: "Build",
   run: "Run",
   analyze: "Analyze",
+  configure: "Configure",
 };
 
 export function StudioShell() {
@@ -107,7 +109,7 @@ export function StudioShell() {
           ) : null}
         </div>
         <nav className="flex gap-2 text-xs">
-          {(["build", "run", "analyze"] as const).map((tab) => (
+          {(["build", "run", "analyze", "configure"] as const).map((tab) => (
             <button
               key={tab}
               type="button"
@@ -133,54 +135,60 @@ export function StudioShell() {
         </nav>
       </header>
 
-      {mode === "build" ? <DescribePanel onError={showError} onSuccess={showSuccess} /> : null}
+      {mode === "configure" ? (
+        <ConfigurationPage />
+      ) : (
+        <>
+          {mode === "build" ? <DescribePanel onError={showError} onSuccess={showSuccess} /> : null}
 
-      <div className="flex min-h-0 flex-1">
-        {mode === "build" ? (
-          <>
-            <Library
-              onAddKind={addNodeAtCenter}
-              onInsertPreset={insertPresetAtCenter}
-              onLoadTemplate={loadTemplate}
-            />
-            <main className="relative min-w-0 flex-1">
-              <CanvasProvider
-                onEdgeError={showError}
-                skipAnimations={skipAnimations}
-                runPaused={runPaused}
-                onPossessNode={setPossessRequest}
+          <div className="flex min-h-0 flex-1">
+            {mode === "build" ? (
+              <>
+                <Library
+                  onAddKind={addNodeAtCenter}
+                  onInsertPreset={insertPresetAtCenter}
+                  onLoadTemplate={loadTemplate}
+                />
+                <main className="relative min-w-0 flex-1">
+                  <CanvasProvider
+                    onEdgeError={showError}
+                    skipAnimations={skipAnimations}
+                    runPaused={runPaused}
+                    onPossessNode={setPossessRequest}
+                  />
+                </main>
+                <Inspector />
+              </>
+            ) : mode === "run" ? (
+              <main className="relative min-w-0 flex-1">
+                <CanvasProvider
+                  onEdgeError={showError}
+                  skipAnimations={skipAnimations}
+                  runPaused={runPaused}
+                  onPossessNode={setPossessRequest}
+                />
+              </main>
+            ) : null}
+
+            <aside
+              className={
+                mode === "build"
+                  ? "hidden"
+                  : mode === "analyze"
+                    ? "w-full border-l border-neutral-800 bg-neutral-950 p-4"
+                    : "w-72 border-l border-neutral-800 bg-neutral-950"
+              }
+            >
+              <RunPanel
+                onError={showError}
+                onPausedChange={setRunPaused}
+                possessRequest={possessRequest}
+                onPossessConsumed={() => setPossessRequest(null)}
               />
-            </main>
-            <Inspector />
-          </>
-        ) : mode === "run" ? (
-          <main className="relative min-w-0 flex-1">
-            <CanvasProvider
-              onEdgeError={showError}
-              skipAnimations={skipAnimations}
-              runPaused={runPaused}
-              onPossessNode={setPossessRequest}
-            />
-          </main>
-        ) : null}
-
-        <aside
-          className={
-            mode === "build"
-              ? "hidden"
-              : mode === "analyze"
-                ? "w-full border-l border-neutral-800 bg-neutral-950 p-4"
-                : "w-72 border-l border-neutral-800 bg-neutral-950"
-          }
-        >
-          <RunPanel
-            onError={showError}
-            onPausedChange={setRunPaused}
-            possessRequest={possessRequest}
-            onPossessConsumed={() => setPossessRequest(null)}
-          />
-        </aside>
-      </div>
+            </aside>
+          </div>
+        </>
+      )}
 
       <footer className="flex items-center gap-6 border-t border-neutral-800 px-4 py-1.5 text-xs text-neutral-400" style={{ fontFamily: fontMono }}>
         <span>Turn {turn}</span>

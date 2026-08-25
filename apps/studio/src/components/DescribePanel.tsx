@@ -1,13 +1,9 @@
 "use client";
 
-import { composeFromDescription } from "@machina/graph";
+import { describeNoLlmCopy } from "@machina/core";
 import { useCallback, useState } from "react";
 import { getStudioClient } from "@/lib/machina-client";
-import { modelConfigured } from "@/lib/model-configured";
-import { useProjectSnapshot, useRegistry } from "@/lib/project-store-context";
-
-const NO_MODEL =
-  "No language model is configured. Build by hand or set an API key.";
+import { useProjectSnapshot } from "@/lib/project-store-context";
 
 type DescribePanelProps = {
   onError: (message: string) => void;
@@ -16,7 +12,6 @@ type DescribePanelProps = {
 
 export function DescribePanel({ onError, onSuccess }: DescribePanelProps) {
   const store = useProjectSnapshot();
-  const registry = useRegistry();
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -26,26 +21,16 @@ export function DescribePanel({ onError, onSuccess }: DescribePanelProps) {
       return;
     }
 
-    if (!modelConfigured()) {
-      onError(NO_MODEL);
-      return;
-    }
-
     setBusy(true);
     try {
-      const result = await composeFromDescription(
-        prompt,
-        registry,
-        async () => {
-          throw new Error(NO_MODEL);
-        },
-        async (project) => {
-          const compiled = await getStudioClient().compile(project);
-          return { ok: compiled.ok, message: compiled.ok ? undefined : compiled.errors[0]?.message };
-        },
-      );
+      const settings = await getStudioClient().getSettings();
+      if (settings.default === null) {
+        onError(describeNoLlmCopy());
+        return;
+      }
 
-      if ("errors" in result) {
+      const result = await getStudioClient().compose(prompt.trim(), store.getProject());
+      if (!result.ok) {
         onError(result.errors.map((error) => error.message).join(" "));
         return;
       }
@@ -58,7 +43,7 @@ export function DescribePanel({ onError, onSuccess }: DescribePanelProps) {
     } finally {
       setBusy(false);
     }
-  }, [onError, onSuccess, prompt, registry, store]);
+  }, [onError, onSuccess, prompt, store]);
 
   return (
     <div className="border-b border-neutral-800 px-4 py-3">
@@ -75,7 +60,7 @@ export function DescribePanel({ onError, onSuccess }: DescribePanelProps) {
         <button
           type="button"
           disabled={busy}
-          onClick={() => void compose()}
+          onClick={() => compose()}
           className="rounded bg-neutral-200 px-3 py-2 text-sm font-medium text-black disabled:opacity-50"
         >
           Compose

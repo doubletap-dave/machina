@@ -22,6 +22,15 @@ vi.mock("@/lib/machina-client", () => ({
     submitAction: vi.fn(),
     getRun: vi.fn(),
     loadExampleWorld: vi.fn(),
+    getSettings: vi.fn().mockResolvedValue({
+      default: null,
+      providers: {
+        anthropic: { configured: false, verified: false, last4: "", models: [] },
+        openai: { configured: false, verified: false, last4: "", models: [] },
+        openrouter: { configured: false, verified: false, last4: "", models: [] },
+        perplexity: { configured: false, verified: false, last4: "", models: [] },
+      },
+    }),
     subscribe: () => () => {},
   }),
 }));
@@ -79,11 +88,19 @@ describe("StudioShell chrome", () => {
     cleanup();
   });
 
-  it("uses sentence-case Build Run Analyze", () => {
+  it("uses sentence-case Build Run Analyze Configure", () => {
     renderShell();
     expect(screen.getByRole("button", { name: "Build" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Run$/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Analyze" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Configure" })).toBeInTheDocument();
+  });
+
+  it("opens the configuration page from Configure", async () => {
+    const user = userEvent.setup();
+    renderShell();
+    await user.click(screen.getByRole("button", { name: "Configure" }));
+    expect(await screen.findByRole("heading", { name: "Anthropic" })).toBeInTheDocument();
   });
 
   it("shows a status bar with skip animations", () => {

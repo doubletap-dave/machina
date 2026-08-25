@@ -1,8 +1,9 @@
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AgentAction, MachinaProject, SimulationPlan } from "@machina/core";
-import { openEngineFromProject, type EngineRun } from "@machina/engine";
+import { openEngineFromProject, type EngineRun, type InvokeChat } from "@machina/engine";
 import type { ThinkFn } from "@machina/simulation";
 import { toWs } from "./instrumentation.ts";
+import { handleCompose } from "./compose.ts";
 import { createSettingsHandler } from "./settings.ts";
 import { attachWebSocket } from "./ws.ts";
 
@@ -20,6 +21,7 @@ export type RuntimeDeps = {
   homedir?: string;
   fetch?: typeof fetch;
   env?: NodeJS.Dict<string>;
+  invokeChat?: InvokeChat;
 };
 
 type Stance = "watch" | "god" | "possess";
@@ -79,6 +81,16 @@ export function createApp(deps: RuntimeDeps): RuntimeApp {
         }
         const project = await deps.loadExampleProject();
         sendJson(res, 200, project);
+        return;
+      }
+
+      if (method === "POST" && url === "/compose") {
+        await handleCompose(req, res, {
+          compile: deps.compile,
+          homedir: deps.homedir,
+          env: deps.env ?? process.env,
+          invokeChat: deps.invokeChat,
+        });
         return;
       }
 

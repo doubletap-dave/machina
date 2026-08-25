@@ -8,6 +8,7 @@ import { keyRefusedCopy } from "@machina/core";
 import {
   credentialsPath,
   openEngineFromProject,
+  type InvokeChat,
 } from "@machina/engine";
 import { compile } from "@machina/graph";
 import { createRegistry } from "@machina/node-sdk";
@@ -69,6 +70,7 @@ function runtimeDeps(extra?: {
   homedir?: string;
   fetch?: typeof fetch;
   env?: NodeJS.Dict<string>;
+  invokeChat?: InvokeChat;
 }) {
   return {
     compile: realCompile,
@@ -78,6 +80,7 @@ function runtimeDeps(extra?: {
     homedir: extra?.homedir,
     fetch: extra?.fetch,
     env: extra?.env ?? {},
+    invokeChat: extra?.invokeChat,
   };
 }
 
@@ -228,5 +231,44 @@ describe("MachinaClient", () => {
     await expect(access(credentialsPath({ homedir }))).rejects.toMatchObject({
       code: "ENOENT",
     });
+  });
+
+  it("compose returns English errors when no verified default is set", async () => {
+    const homedir = await mkdtemp(join(tmpdir(), "machina-client-"));
+    await withServer(
+      async (client) => {
+        const result = await client.compose("a clock", project);
+        expect(result.ok).toBe(false);
+        if (!result.ok) {
+          expect(result.errors.some((error) => /no language model is configured/i.test(error.message))).toBe(
+            true,
+          );
+        }
+      },
+      { homedir, fetch: stubFetch(200, { data: [] }), env: {} },
+    );
+  });
+
+  it("compose posts the prompt and project and returns a composed graph", async () => {
+    const homedir = await mkdtemp(join(tmpdir(), "machina-client-"));
+    await withServer(
+      async (client) => {
+        await client.putProviderKey("openai", "sk-test-abcd");
+        await client.putDefault({ provider: "openai", model: "gpt-4o" });
+        const result = await client.compose("keep this clock", project);
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          expect(result.project.graphs[0]?.nodes.some((node) => node.kind === "control.clock")).toBe(
+            true,
+          );
+        }
+      },
+      {
+        homedir,
+        fetch: stubFetch(200, { data: [{ id: "gpt-4o" }] }),
+        env: {},
+        invokeChat: async () => JSON.stringify(project),
+      },
+    );
   });
 });

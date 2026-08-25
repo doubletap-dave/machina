@@ -10,6 +10,10 @@ export type CompileOutcome =
   | { ok: true; plan: SimulationPlan }
   | { ok: false; errors: MachinaError[] };
 
+export type ComposeOutcome =
+  | { ok: true; project: MachinaProject }
+  | { ok: false; errors: MachinaError[] };
+
 export type ProviderId = "anthropic" | "openai" | "openrouter" | "perplexity";
 
 export type CachedModel = { id: string; name: string };
@@ -60,6 +64,27 @@ export class MachinaClient {
       return { ok: false, errors: body.errors ?? [] };
     }
     return { ok: true, plan: body.plan as SimulationPlan };
+  }
+
+  async compose(prompt: string, project: MachinaProject): Promise<ComposeOutcome> {
+    const response = await fetch(`${this.#baseUrl}/compose`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ prompt, project }),
+    });
+    const body = (await response.json()) as {
+      project?: MachinaProject;
+      errors?: MachinaError[];
+      message?: string;
+    };
+    if (!response.ok) {
+      const errors = body.errors ?? [];
+      if (errors.length === 0 && typeof body.message === "string") {
+        return { ok: false, errors: [{ code: "NO_LLM", message: body.message }] };
+      }
+      return { ok: false, errors };
+    }
+    return { ok: true, project: body.project as MachinaProject };
   }
 
   async startRun(body: {
